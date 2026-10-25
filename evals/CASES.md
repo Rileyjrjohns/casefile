@@ -21,7 +21,8 @@ holds its scenario, the expected signals with the records each must cite, the
 expected recommendation and a `rationale` explaining the expectation from the
 scenario and the documented policy ([agent guide](../docs/agent.md),
 [banking scenarios](../docs/banking-scenarios.md), ADRs 018, 019, 021 and 022).
-The rationale and expected block were written before the case was first run.
+Each rationale and expected block is reasoned from that policy; the commit history
+cannot prove it preceded the first run, so independent review is still required.
 Expected signals are compared on key, cited records, statement text and
 confidence in `tests/test_current_evaluations.py`, which is stricter than the
 gated signal-key metrics. Replay fixtures are recorded from the deterministic fake

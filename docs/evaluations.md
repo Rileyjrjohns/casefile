@@ -72,8 +72,9 @@ and a six-call tool budget. They cover:
 
 Every case is fictional (`Demo`/`Fictional` names, `demo-customer-NNN` ids). Each
 one carries a `rationale` explaining the expected signals, citations and
-recommendation from the scenario and the documented policy, and that expectation
-was written before the case was run, not copied from a run. The gated metrics
+recommendation from the scenario and the documented policy. The suite landed in
+one commit, so the repository cannot prove that expectations preceded the runs;
+independent human review remains the check against self-reference. The gated metrics
 compare signal keys; `tests/test_current_evaluations.py` additionally requires
 every observed signal to match its expected cited records, statement and
 confidence exactly. Writing the suite exposed two disagreements with the code: the

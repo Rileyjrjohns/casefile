@@ -156,8 +156,10 @@ what new investigations use: `findings-v2` (monthly EUR aggregation, currency an
 unresolved-screening gaps), the payment, credit-document and sanctions-identity
 workflows with consistent and inconsistent variants, paraphrased prompt injections
 in notes and documents, benign look-alike text, missing KYC, mixed cases and
-boundary values. Each case's expectation and rationale were written from the
-documented policy before the case was run, and the current thresholds are strict
+boundary values. Each case's expectation and rationale are reasoned from the
+documented policy; two of them exposed policy defects that were then fixed. The
+history cannot prove authoring order, and labels await independent human review.
+The current thresholds are strict
 (precision, recall and recommendation accuracy 1.0, no invalid citation, every run
 completing). See [evaluations](docs/evaluations.md) and
 [ADR 023](docs/adr/0023-separate-current-policy-evaluation-suite.md).
