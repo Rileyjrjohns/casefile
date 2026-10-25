@@ -27,6 +27,7 @@ dependencies = [
 casefile-demo-mcp = "casefile.bootstrap.tools:main"
 casefile-investigate = "casefile.bootstrap.demo_agent:main"
 casefile-eval = "casefile.bootstrap.evaluations:main"
+casefile-eval-fixtures = "casefile.bootstrap.evaluation_fixtures:main"
 casefile-mcp = "casefile.bootstrap.mcp_server:main"
 casefile-serve = "casefile.bootstrap.server:main"
 casefile-train-risk = "casefile.features.risk_scoring.adapters.outbound.training:main"

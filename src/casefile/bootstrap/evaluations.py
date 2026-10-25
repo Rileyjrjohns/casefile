@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import json
 import os
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -41,6 +42,7 @@ from casefile.features.investigation.adapters.outbound.documents import BudgetDa
 from casefile.features.investigation.application.agent import InvestigationAgent, checked
 from casefile.features.investigation.application.agent_types import (
     CaseContext,
+    EvidenceBatch,
     LanguageModel,
     TraceEvent,
     tool_input,
@@ -75,19 +77,66 @@ class ReplayDocument(Document):
     reservation: BudgetData
 
 
+RECORDED_AT = datetime(2026, 10, 24, 9, tzinfo=UTC)
+
+
+def call_events(
+    events: list[TraceEvent], operation: str, input_json: str, output_json: str, usage: BudgetUsage
+) -> None:
+    """Append the started and succeeded events of one recorded call."""
+    events.append(
+        TraceEvent(
+            len(events) + 1,
+            operation,
+            "started",
+            RECORDED_AT,
+            input_json=input_json,
+            reserved=usage,
+        )
+    )
+    events.append(
+        TraceEvent(
+            len(events) + 1,
+            operation,
+            "succeeded",
+            RECORDED_AT,
+            input_json=input_json,
+            output_json=output_json,
+            reserved=usage,
+        )
+    )
+
+
+def tool_recordings(
+    scenario: ScenarioDocument, codec: AgentJsonCodec
+) -> tuple[CaseContext, tuple[EvidenceBatch, ...], list[TraceEvent]]:
+    """The case context, its evidence snapshots and one recorded call per evidence tool."""
+    context = codec.context(json.dumps(scenario.context))
+    batches = tuple(codec.evidence(json.dumps(batch)) for batch in scenario.evidence)
+    if len({batch.tool for batch in batches}) != len(batches):
+        raise ValueError("Each evidence tool must have one recorded response.")
+    events: list[TraceEvent] = []
+    for batch in batches:
+        call_events(
+            events,
+            f"tool.{batch.tool}",
+            tool_input(batch.tool, batch.query),
+            codec.evidence_json(batch),
+            checked(BudgetUsage.create(1, 0, Decimal(0))),
+        )
+    return context, batches, events
+
+
 def recordings(
     case: BenchmarkCase, codec: AgentJsonCodec
 ) -> tuple[CaseContext, tuple[TraceEvent, ...]]:
     scenario = ScenarioDocument.model_validate_json(case.scenario_json)
     replay = ReplayDocument.model_validate_json(case.replay_json)
-    context = codec.context(json.dumps(scenario.context))
-    batches = tuple(codec.evidence(json.dumps(batch)) for batch in scenario.evidence)
+    context, batches, events = tool_recordings(scenario, codec)
     request = codec.request(json.dumps(replay.request))
     response = codec.response(json.dumps(replay.response))
     if request.context != context or request.evidence != batches:
         raise ValueError("Replay inputs differ from the golden scenario.")
-    if len({batch.tool for batch in batches}) != len(batches):
-        raise ValueError("Each evidence tool must have one recorded response.")
     observed = {
         Citation(batch.tool.value, record.record_id)
         for batch in batches
@@ -95,34 +144,6 @@ def recordings(
     }
     if any(source not in observed for signal in case.expected.signals for source in signal.sources):
         raise ValueError("Reference analysis cites a record absent from its tool snapshot.")
-    events: list[TraceEvent] = []
-    at = datetime(2026, 10, 24, 9, tzinfo=UTC)
-
-    def pair(operation: str, input_json: str, output_json: str, usage: BudgetUsage) -> None:
-        events.append(
-            TraceEvent(
-                len(events) + 1, operation, "started", at, input_json=input_json, reserved=usage
-            )
-        )
-        events.append(
-            TraceEvent(
-                len(events) + 1,
-                operation,
-                "succeeded",
-                at,
-                input_json=input_json,
-                output_json=output_json,
-                reserved=usage,
-            )
-        )
-
-    for batch in batches:
-        pair(
-            f"tool.{batch.tool}",
-            tool_input(batch.tool, batch.query),
-            codec.evidence_json(batch),
-            checked(BudgetUsage.create(1, 0, Decimal(0))),
-        )
     reservation = checked(
         BudgetUsage.create(
             replay.reservation.tool_calls,
@@ -130,7 +151,13 @@ def recordings(
             replay.reservation.estimated_cost,
         )
     )
-    pair("model.generate", codec.request_json(request), codec.response_json(response), reservation)
+    call_events(
+        events,
+        "model.generate",
+        codec.request_json(request),
+        codec.response_json(response),
+        reservation,
+    )
     return context, tuple(events)
 
 
@@ -167,14 +194,22 @@ class AgentCaseRunner:
             raise ValueError("Unknown findings policy version.")
 
     async def run(self, case: BenchmarkCase) -> Observation:
+        return await self.observe(case.id, lambda codec: recordings(case, codec))
+
+    async def observe(
+        self,
+        key: str,
+        load: Callable[[AgentJsonCodec], tuple[CaseContext, tuple[TraceEvent, ...]]],
+    ) -> Observation:
+        """Run one isolated investigation over recorded tool calls and observe its outcome."""
         started = perf_counter()
         clock, codec = SystemClock(), AgentJsonCodec()
         app = build_memory_application(clock)
-        case_id = CaseId(uuid5(NAMESPACE_URL, f"casefile:eval:{case.id}"))
+        case_id = CaseId(uuid5(NAMESPACE_URL, f"casefile:eval:{key}"))
         run_id = RunId(uuid5(case_id, "run"))
         error: str | None = None
         try:
-            context, events = recordings(case, codec)
+            context, events = load(codec)
             checked(
                 await app.open_case.execute(
                     OpenCaseCommand(
