@@ -133,8 +133,8 @@ investigator notes. Loading it checks uniqueness and customer references.
 One note contains a quoted prompt-injection attempt, preserved verbatim as
 untrusted evidence. Tool schemas validate structure, not the truth or safety
 of narrative content. The [agent](agent.md) now registers returned sources,
-records call traces and enforces run budgets. General injection detection
-through typed decision models remains later work.
+records call traces and enforces run budgets. The demo injection check is a
+heuristic pattern set; general injection detection remains fallible.
 
 ## Tests and current limits
 

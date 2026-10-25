@@ -32,7 +32,8 @@ instruction to fail closed. A value below 0.8 fails the run with a reason naming
 the failing facts, and the tool is not invoked. See
 [ADR 021](adr/0021-fact-based-tool-guard.md).
 
-The default policy recognizes one injection phrase and uses fixed support scores;
+The default policy flags injection with a documented, normalized pattern set (a
+heuristic, not a classifier) and uses fixed support scores;
 it is not a learned confidence estimator. `LocalDecisionModel` delegates risk to
 the trained `RiskModel` port and uses explicit policy for other tasks. The tabular
 model is not an injection or language classifier.

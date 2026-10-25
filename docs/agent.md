@@ -36,7 +36,7 @@ An invalid customer identifier fails the run with a recorded query error.
 
 The default evidence policy identifies transfers above declared monthly
 volume, exact fictional sanctions matches, open KYC mismatch alerts and notes
-containing a specific instruction-like phrase. Its fixed scores and routing are
+and documents whose text matches the instruction-like pattern set. Its fixed scores and routing are
 test fixtures, not trained or calibrated risk estimates. Purpose-specific providers and the versioned local risk signal are described in
 [typed decisions](decisions.md). The API runtime enables risk; the isolated CLI
 disables the additional synthetic risk signal.
@@ -53,18 +53,32 @@ screening gap; an empty response is not identity clearance. The extended identit
 dossier uses its own document-based disambiguation rules. See
 [ADR 019](adr/0019-versioned-evidence-findings.md).
 
-The language model writes only the summary and signal statements. It receives
-the approved signal keys and sources and cannot supply confidence scores,
-recommendations, tool choices or a human decision. Its statements must cover
-the approved signals exactly once. Every source must have been returned by a tool or the versioned local risk
-model in this run, and belong to its corresponding approved signal.
-Unknown, duplicate, omitted or unrelated sources fail validation. Conclusion
-identifiers are deterministic from the run ID and signal key.
+The language model writes the narrative summary. It also returns one statement
+per approved signal, which is validated structurally and kept in the journal, but
+the conclusion shown to the reviewer always carries the approved signal's own
+deterministic statement. The model receives the approved signal keys and sources
+and cannot supply confidence scores, recommendations, tool choices or a human
+decision. Its statements must cover the approved signals exactly once. Every
+source must have been returned by a tool or the versioned local risk model in this
+run, and belong to its corresponding approved signal. Unknown, duplicate, omitted
+or unrelated sources fail validation. Conclusion identifiers are deterministic
+from the run ID and signal key.
+
+A deterministic backstop then checks the summary against the effective
+recommendation and the signals. A summary that recommends closing when the
+recommendation is `escalate` or `request_information`, recommends escalation when
+it is `close`, or claims no concern, no risk or compliance clearance while a
+concern signal exists, fails the run with `Model summary contradicts the
+analysis` and the contradiction named. Negated wording such as "not a finding of
+fraud" is accepted. See
+[ADR 022](adr/0022-deterministic-conclusion-text-and-summary-backstop.md).
 
 This validates structured citations and preserves human control; it does not
-prove that prose is factually correct or that a provider is truthful. Tool and
-case text remain untrusted. The phrase-based demonstration signal is not a
-general prompt-injection detector.
+prove that prose is factually correct or that a provider is truthful. The
+backstop is a phrase-level heuristic, not semantic entailment, so a reworded
+contradiction can pass. Tool and case text remain untrusted. The pattern-based
+demonstration signal is a heuristic, not a general prompt-injection detector, and
+detection by a real model is fallible as well.
 
 The application independently constrains a model recommendation of `close`.
 Unresolved sourced concerns require an escalation recommendation; missing KYC or
