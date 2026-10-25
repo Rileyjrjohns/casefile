@@ -18,6 +18,7 @@ from casefile.features.investigation.application.findings_policy import (
     FINDINGS_VERSIONS,
     additional_findings,
 )
+from casefile.features.investigation.application.narrative_policy import summary_contradictions
 from casefile.features.investigation.application.tools import (
     AlertRecord,
     CaseDocument,
@@ -162,6 +163,14 @@ def validate_analysis(
         if isinstance(conclusion, Err):
             return conclusion
         conclusions.append(conclusion.value)
+    contradictions = summary_contradictions(response.summary, recommendation, signals)
+    if contradictions:
+        return Err(
+            InvestigationError(
+                InvestigationErrorCode.INVALID_ANALYSIS,
+                f"Model summary contradicts the analysis: {'; '.join(contradictions)}.",
+            )
+        )
     return Analysis.create(response.summary, tuple(conclusions), recommendation)
 
 

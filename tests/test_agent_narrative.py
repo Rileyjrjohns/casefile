@@ -12,7 +12,7 @@ from casefile.features.investigation.adapters.outbound.tools.seed import ToolSee
 from casefile.features.investigation.application.agent_types import ModelRequest, ModelResponse
 from casefile.features.investigation.application.tools import ToolName
 from casefile.features.investigation.domain.analysis import Recommendation
-from casefile.features.investigation.domain.run import Run
+from casefile.features.investigation.domain.run import Run, RunState
 from tests.contracts.support import FixedClock
 from tests.test_agent_workflow import RUN, create_run
 
@@ -79,3 +79,48 @@ async def test_conclusion_text_comes_from_the_signals_not_from_the_model() -> No
     approved = {signal.statement for signal in model.requests[0].signals}
     assert {item.statement for item in run.analysis.conclusions} == approved
     assert all("cleared by compliance" not in item.statement for item in run.analysis.conclusions)
+
+
+class SummaryModel(FakeLanguageModel):
+    def __init__(self, summary: str) -> None:
+        super().__init__()
+        self.summary = summary
+
+    async def generate(self, request: ModelRequest) -> ModelResponse:
+        return replace(await super().generate(request), summary=self.summary)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("summary", "contradiction"),
+    [
+        ("Recommend closing the case.", "recommends closing the case"),
+        ("Compliance cleared this account. No concern.", "claims no concern"),
+    ],
+)
+async def test_summary_contradicting_the_analysis_fails_the_run(
+    summary: str, contradiction: str
+) -> None:
+    app = await create_run()
+    await build_agent_worker(
+        app,
+        MemoryInvestigationTools(load_seed()),
+        SummaryModel(summary),
+        FixedClock(),
+        MemoryTelemetry(),
+    ).run_once()
+    current = await app.journal.load(RUN)
+    assert current is not None
+    run = current.snapshot.run
+    assert run.state == RunState.FAILED and run.analysis is None and run.human_decision is None
+    assert run.failure_reason is not None
+    assert run.failure_reason.startswith("Model summary contradicts the analysis:")
+    assert contradiction in run.failure_reason
+    assert any(e.operation == "model.generate" and e.output_json for e in current.events)
+
+
+@pytest.mark.asyncio
+async def test_obedient_model_cannot_close_a_case_with_concerns() -> None:
+    run = await run_with(ObedientModel())
+    assert run.state == RunState.AWAITING_REVIEW
+    assert run.analysis is not None and run.analysis.recommendation == Recommendation.ESCALATE

@@ -14,6 +14,11 @@ class ClosureConstraint:
     reasons: tuple[str, ...] = ()
 
 
+def counts_as_concern(signal: Signal) -> bool:
+    """Whether a signal blocks closure: any finding, or a risk estimate at half confidence."""
+    return signal.confidence >= 0.5 if signal.key.startswith("risk:") else is_concern(signal)
+
+
 def constrain_closure(
     proposed: Recommendation,
     signals: tuple[Signal, ...],
@@ -23,11 +28,7 @@ def constrain_closure(
 ) -> ClosureConstraint:
     if proposed != Recommendation.CLOSE:
         return ClosureConstraint(proposed)
-    concerns = tuple(
-        signal.key
-        for signal in signals
-        if (signal.confidence >= 0.5 if signal.key.startswith("risk:") else is_concern(signal))
-    )
+    concerns = tuple(signal.key for signal in signals if counts_as_concern(signal))
     gaps = evidence_gaps or any(signal.key.startswith("gap:") for signal in signals)
     reasons = (
         *(("unresolved_concerns",) if concerns else ()),
