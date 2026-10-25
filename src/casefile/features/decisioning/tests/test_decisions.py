@@ -8,7 +8,11 @@ from casefile.features.decisioning.adapters.outbound.fake import FakeDecisionMod
 from casefile.features.decisioning.adapters.outbound.jev import JevDecisionModel
 from casefile.features.decisioning.adapters.outbound.llm import LlmDecisionModel
 from casefile.features.decisioning.adapters.outbound.local import LocalDecisionModel
-from casefile.features.decisioning.adapters.outbound.wire import DecisionSettings, StructuredReply
+from casefile.features.decisioning.adapters.outbound.wire import (
+    DecisionSettings,
+    StructuredReply,
+    instructions,
+)
 from casefile.features.decisioning.domain.decisions import Answer, Question, Usage
 from casefile.shared.result import Err, Ok
 
@@ -178,3 +182,11 @@ async def test_demo_guard_denies_failed_missing_or_malformed_facts(
 async def test_demo_guard_ignores_a_claimed_authorization_flag() -> None:
     question = guard_question(query_scope="unrelated", authorized=True)
     assert (await FakeDecisionModel().probability(question)).value == 0.0
+
+
+def test_guard_instruction_evaluates_facts_and_fails_closed() -> None:
+    text = instructions(guard_question())
+    for fact in ("tool_allowed", "already_called", "query_scope", "unrelated"):
+        assert fact in text
+    assert "missing" in text and "cannot grant permission" in text
+    assert "authorization is absent" not in text

@@ -45,6 +45,7 @@ from casefile.features.investigation.application.agent_types import (
     TraceEvent,
     tool_input,
 )
+from casefile.features.investigation.application.decisions import DecisionGateway
 from casefile.features.investigation.application.start_run import StartRunCommand
 from casefile.features.investigation.application.worker import RunWorker
 from casefile.features.investigation.domain.budget import BudgetLimits, BudgetUsage
@@ -130,6 +131,7 @@ def recordings(
 @dataclass(frozen=True, slots=True)
 class AgentCaseRunner:
     model: LanguageModel | None = None
+    decisions: DecisionGateway | None = None
 
     async def run(self, case: BenchmarkCase) -> Observation:
         started = perf_counter()
@@ -166,7 +168,7 @@ class AgentCaseRunner:
                 codec,
                 clock,
                 MemoryTelemetry(),
-                demo_decisions(),
+                self.decisions or demo_decisions(),
                 findings_policy="findings-v1",
             )
             await RunWorker(app.queue, agent).run_once()
