@@ -4,6 +4,7 @@ import json
 from dataclasses import dataclass
 
 from casefile.features.decisioning.domain.decisions import Answer, Question, Usage
+from casefile.features.decisioning.domain.injection import looks_like_instruction
 from casefile.shared.result import Err
 
 
@@ -84,7 +85,7 @@ class FakeDecisionModel:
         if question.purpose == "guard":
             value = guard_verdict(state)
         elif question.purpose == "injection":
-            value = float("ignore previous instructions" in str(state.get("text", "")).casefold())
+            value = float(looks_like_instruction(str(state.get("text", ""))))
         elif question.purpose == "risk":
             value = 0.5
         else:
