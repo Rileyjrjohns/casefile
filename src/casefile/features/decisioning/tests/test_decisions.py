@@ -203,3 +203,18 @@ def test_guard_instruction_evaluates_facts_and_fails_closed() -> None:
         assert fact in text
     assert "missing" in text and "cannot grant permission" in text
     assert "authorization is absent" not in text
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("kind", ["monthly_volume", "gap", "finding", "context"])
+async def test_fake_scores_deterministic_comparisons_as_fully_supported(kind: str) -> None:
+    # Findings built by exact comparison of returned records carry full support, including the
+    # cumulative monthly volume that findings-v2 declares with confidence 1.0.
+    result = Question.create(
+        "score",
+        "signal",
+        json.dumps({"signal_kind": kind, "statement": "An exact comparison."}),
+        ("unsupported", "fully supported"),
+    )
+    assert isinstance(result, Ok)
+    assert (await FakeDecisionModel().score(result.value)).value == 1.0

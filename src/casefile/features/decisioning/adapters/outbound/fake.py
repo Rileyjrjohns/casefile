@@ -99,6 +99,8 @@ class FakeDecisionModel:
             "sanctions": 0.9,
             "kyc": 0.7,
             "instruction": 0.6,
+            # Exact comparisons of returned records, as findings-v2 declares for the monthly total.
+            "monthly_volume": 1.0,
             "finding": 1.0,
             "context": 1.0,
             "gap": 1.0,
