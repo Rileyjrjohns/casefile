@@ -20,3 +20,4 @@
 - [0018-recommendation-closure-constraints](./0018-recommendation-closure-constraints.md)
 - [0019-versioned-evidence-findings](./0019-versioned-evidence-findings.md)
 - [0020-curated-correction-exports](./0020-curated-correction-exports.md)
+- [0021-fact-based-tool-guard](./0021-fact-based-tool-guard.md)

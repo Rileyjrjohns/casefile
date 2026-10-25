@@ -9,8 +9,28 @@ technical failures. Decisions never return free text.
 The agent uses this port for priority, type, next tool, pre-tool guards, injection
 checks, signal support, model route and recommendation. Fact extraction supplies
 candidate signals from returned records. Code independently enforces query
-authorization, tool allowlists, budgets, sources and human review. Every decision
-has a reserved/settled journal event and can be replayed.
+validation, budgets, sources and human review. Every decision has a
+reserved/settled journal event and can be replayed.
+
+## Pre-tool guard
+
+Before each tool call the agent asks a `guard` probability question. Its state
+carries only facts the application computes from the case and this run's evidence;
+it never carries a precomputed verdict or authorization flag:
+
+| Fact | Meaning |
+| --- | --- |
+| `tool`, `query`, `subject_id` | The proposed call and the case subject |
+| `query_scope` | `case_subject` when the query equals the subject id; `case_kyc_legal_name` when the sanctions tool is queried with the legal name of a KYC profile returned in this run for the subject; otherwise `unrelated` |
+| `tool_allowed` | Whether this workflow may call the tool: documents only for banking kinds, sanctions only after a KYC profile was returned |
+| `already_called` | Whether the tool already succeeded in this run |
+
+The demo policy (and therefore `local`) answers 1.0 only when `tool_allowed` is
+true, `already_called` is false and the scope is not `unrelated`; a missing or
+malformed fact answers 0.0. Jev and LLM providers receive the same facts and an
+instruction to fail closed. A value below 0.8 fails the run with a reason naming
+the failing facts, and the tool is not invoked. See
+[ADR 021](adr/0021-fact-based-tool-guard.md).
 
 The default policy recognizes one injection phrase and uses fixed support scores;
 it is not a learned confidence estimator. `LocalDecisionModel` delegates risk to
@@ -115,7 +135,12 @@ a five-minute lease. Unknown interrupted calls require a new run after recovery.
 
 `casefile-decisions` extracts identical questions from the unchanged 30 cases.
 Each adapter receives the same sequence, independently of its upstream routing
-answers. Operational labels encode demo policy; injection and recommendation
+answers. Guard questions are built with the agent's own state builder: the
+positives are the states the agent sends for each case's recorded tool calls, and
+four synthetic denials per case (another customer, an unrelated sanctions name, a
+disallowed tool, a repeated call) are negatives. The local policy shares the
+facts' definitions with the labels, so its guard accuracy is a consistency check,
+not independent evidence. Operational labels encode demo policy; injection and recommendation
 labels come from frozen analyses. Signal probes use observed candidate facts and
 include an unsupported conviction claim for every case. Expected answers are
 not supplied to providers. Shared policy assumptions and synthetic correlations
@@ -161,3 +186,5 @@ and uploads reports on failure too.
 The [October 24, 2026 live Jev measurement](measurements/jev-2026-10-24.md)
 documents the first selected-provider run, including its disagreements and
 machine-readable observations. It does not replace the frozen offline fixtures.
+It predates the fact-based guard: its guard rows used the earlier flag-based
+questions and are not comparable with current results.
