@@ -122,3 +122,59 @@ async def test_jev_uses_official_schema_and_validates_closed_choices() -> None:
     assert answer.value == "escalate"
     assert answer.usage.tokens == 15
     assert answer.usage.cost == Decimal(".000012")
+
+
+def guard_question(**facts: object) -> Question:
+    state: dict[str, object] = {
+        "tool": "get_kyc_profile",
+        "query": "demo-customer-002",
+        "subject_id": "demo-customer-002",
+        "query_scope": "case_subject",
+        "tool_allowed": True,
+        "already_called": False,
+    }
+    for name, fact in facts.items():
+        if fact is None:
+            del state[name]
+        else:
+            state[name] = fact
+    result = Question.create("probability", "guard", json.dumps(state))
+    assert isinstance(result, Ok)
+    return result.value
+
+
+@pytest.mark.parametrize("scope", ["case_subject", "case_kyc_legal_name"])
+@pytest.mark.asyncio
+async def test_demo_guard_allows_an_allowed_first_call_in_scope(scope: str) -> None:
+    question = guard_question(query_scope=scope)
+    assert (await FakeDecisionModel().probability(question)).value == 1.0
+    assert (await LocalDecisionModel(Risk()).probability(question)).value == 1.0
+
+
+@pytest.mark.parametrize(
+    "facts",
+    [
+        {"query_scope": "unrelated"},
+        {"tool_allowed": False},
+        {"already_called": True},
+        {"query_scope": "other"},
+        {"tool_allowed": "yes"},
+        {"already_called": "no"},
+        {"query_scope": None},
+        {"tool_allowed": None},
+        {"already_called": None},
+    ],
+)
+@pytest.mark.asyncio
+async def test_demo_guard_denies_failed_missing_or_malformed_facts(
+    facts: dict[str, object],
+) -> None:
+    question = guard_question(**facts)
+    assert (await FakeDecisionModel().probability(question)).value == 0.0
+    assert (await LocalDecisionModel(Risk()).probability(question)).value == 0.0
+
+
+@pytest.mark.asyncio
+async def test_demo_guard_ignores_a_claimed_authorization_flag() -> None:
+    question = guard_question(query_scope="unrelated", authorized=True)
+    assert (await FakeDecisionModel().probability(question)).value == 0.0

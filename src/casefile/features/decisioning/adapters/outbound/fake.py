@@ -39,6 +39,16 @@ def answer(
     return result.value
 
 
+def guard_verdict(state: dict[str, object]) -> float:
+    """Allow only an in-scope, permitted, first call; any missing or malformed fact denies."""
+    allowed = state.get("tool_allowed")
+    called = state.get("already_called")
+    scope = state.get("query_scope")
+    return float(
+        allowed is True and called is False and scope in {"case_subject", "case_kyc_legal_name"}
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class FakeDecisionModel:
     def quote(self, question: Question) -> Usage:
@@ -72,7 +82,7 @@ class FakeDecisionModel:
     async def probability(self, question: Question) -> Answer:
         state = json.loads(question.state_json)
         if question.purpose == "guard":
-            value = float(state.get("authorized") is True)
+            value = guard_verdict(state)
         elif question.purpose == "injection":
             value = float("ignore previous instructions" in str(state.get("text", "")).casefold())
         elif question.purpose == "risk":

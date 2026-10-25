@@ -2,7 +2,7 @@
 
 import json
 import math
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from decimal import Decimal
 from typing import Literal
@@ -14,6 +14,7 @@ from casefile.features.investigation.application.agent_policy import (
 )
 from casefile.features.investigation.application.agent_types import (
     AgentCodec,
+    CaseContext,
     EvidenceBatch,
     EvidenceGateway,
     ExecutionJournal,
@@ -39,6 +40,10 @@ from casefile.features.investigation.application.findings_policy import (
     CURRENT_FINDINGS,
     FINDINGS_VERSIONS,
     LEGACY_FINDINGS,
+)
+from casefile.features.investigation.application.guard_policy import (
+    guard_denial_reasons,
+    guard_state,
 )
 from casefile.features.investigation.application.jobs import JobLease
 from casefile.features.investigation.application.recommendation_policy import constrain_closure
@@ -223,23 +228,31 @@ class _Execution:
         )
         return result.value if updated.state != RunState.FAILED else None
 
-    async def tool(self, tool: ToolName, query: str) -> EvidenceBatch | None:
+    async def tool(
+        self,
+        tool: ToolName,
+        query: str,
+        context: CaseContext,
+        evidence: Sequence[EvidenceBatch],
+    ) -> EvidenceBatch | None:
         authorized = sanction_query(query) if tool == ToolName.SANCTIONS else customer_query(query)
         if isinstance(authorized, Err):
             await self.fail(f"query:{authorized.error.message}")
             return None
+        facts = guard_state(tool, query, context, evidence)
         guard = await self.decision(
             DecisionRequest(
                 tool.value,
                 "probability",
                 "guard",
-                state_json({"tool": tool.value, "query": query, "authorized": True}),
+                state_json(facts),
             )
         )
         if guard is None:
             return None
         if float(guard.value) < 0.8:
-            await self.fail("Pre-tool decision guard denied or could not authorize the query.")
+            reasons = guard_denial_reasons(facts) or ("provider verdict below threshold",)
+            await self.fail(f"Pre-tool decision guard denied the query: {'; '.join(reasons)}.")
             return None
         reservation = checked(BudgetUsage.create(1, 0, Decimal(0)))
 
@@ -446,7 +459,7 @@ class _Execution:
             query = (
                 profile.legal_name if tool == ToolName.SANCTIONS and profile else context.subject_id
             )
-            batch = await self.tool(tool, query)
+            batch = await self.tool(tool, query, context, evidence)
             if batch is None:
                 return
             evidence.append(batch)
