@@ -54,7 +54,7 @@ migrate:
 EVAL_MODE ?= replay
 EVAL_OUTPUT ?= build/evals
 eval:
-	$(RUN) casefile-eval --profile legacy --mode $(EVAL_MODE) --output $(EVAL_OUTPUT)
+	$(RUN) casefile-eval --mode $(EVAL_MODE) --output $(EVAL_OUTPUT)
 	$(RUN) casefile-decisions --output $(EVAL_OUTPUT)
 
 .PHONY: eval-decisions-live
