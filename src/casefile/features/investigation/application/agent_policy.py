@@ -130,6 +130,9 @@ def validate_analysis(
     def rejected(message: str) -> Err[InvestigationError]:
         return Err(InvestigationError(InvestigationErrorCode.UNKNOWN_SOURCE, message))
 
+    # Conclusion text is the approved signal's own statement; the model's per-statement wording
+    # stays in the journal but is never presented to the reviewer. The checks below keep the
+    # model honest about structure: one statement per approved signal, with exactly its sources.
     expected = {signal.key: signal for signal in signals}
     keys = [item.key for item in response.statements]
     if len(set(keys)) != len(keys) or set(keys) != set(expected):
@@ -152,7 +155,7 @@ def validate_analysis(
         exact = tuple(source for source in observed if (source.tool, source.record_id) in sources)
         conclusion = Conclusion.create(
             ConclusionId(uuid5(run_id, signal.key)),
-            statement.text,
+            signal.statement,
             confidence.value,
             exact,
         )

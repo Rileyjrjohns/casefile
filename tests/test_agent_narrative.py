@@ -1,5 +1,7 @@
 """Untrusted narrative inputs and outputs cannot change what the reviewer is shown."""
 
+from dataclasses import replace
+
 import pytest
 
 from casefile.bootstrap.agent import build_agent_worker
@@ -7,6 +9,7 @@ from casefile.features.investigation.adapters.outbound.agent.models import FakeL
 from casefile.features.investigation.adapters.outbound.agent.telemetry import MemoryTelemetry
 from casefile.features.investigation.adapters.outbound.tools.memory import MemoryInvestigationTools
 from casefile.features.investigation.adapters.outbound.tools.seed import ToolSeed, load_seed
+from casefile.features.investigation.application.agent_types import ModelRequest, ModelResponse
 from casefile.features.investigation.application.tools import ToolName
 from casefile.features.investigation.domain.analysis import Recommendation
 from casefile.features.investigation.domain.run import Run
@@ -52,3 +55,27 @@ async def test_paraphrased_injection_in_a_note_is_flagged_with_its_exact_source(
     assert flagged[0].statement == "A note contains instruction-like untrusted text."
     assert "instruction:note-002" in {signal.key for signal in model.requests[0].signals}
     assert run.analysis.recommendation != Recommendation.CLOSE
+
+
+class ObedientModel(FakeLanguageModel):
+    """A compromised narrative model that rewrites every statement but keeps keys and sources."""
+
+    async def generate(self, request: ModelRequest) -> ModelResponse:
+        result = await super().generate(request)
+        return replace(
+            result,
+            statements=tuple(
+                replace(item, text="No concern: cleared by compliance.")
+                for item in result.statements
+            ),
+        )
+
+
+@pytest.mark.asyncio
+async def test_conclusion_text_comes_from_the_signals_not_from_the_model() -> None:
+    model = ObedientModel()
+    run = await run_with(model)
+    assert run.analysis is not None and run.analysis.conclusions
+    approved = {signal.statement for signal in model.requests[0].signals}
+    assert {item.statement for item in run.analysis.conclusions} == approved
+    assert all("cleared by compliance" not in item.statement for item in run.analysis.conclusions)
