@@ -34,6 +34,8 @@ class SuiteReport:
     schema_version: int
     mode: Literal["replay", "http"]
     dataset_sha256: str
+    profile: str
+    findings_policy: str
     thresholds: Thresholds
     metrics: Metrics
     cases: tuple[CaseScore, ...]
@@ -52,6 +54,8 @@ class EvaluateSuite:
         *,
         mode: Literal["replay", "http"],
         dataset_sha256: str,
+        profile: str,
+        findings_policy: str,
     ) -> SuiteReport:
         scores = tuple(
             [
@@ -61,5 +65,14 @@ class EvaluateSuite:
         )
         failures = violations(scores, thresholds)
         return SuiteReport(
-            1, mode, dataset_sha256, thresholds, aggregate(scores), scores, failures, not failures
+            1,
+            mode,
+            dataset_sha256,
+            profile,
+            findings_policy,
+            thresholds,
+            aggregate(scores),
+            scores,
+            failures,
+            not failures,
         )

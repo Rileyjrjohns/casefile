@@ -6,6 +6,7 @@ import pytest
 from casefile.bootstrap.decision_benchmark import benchmark, probes
 from casefile.bootstrap.evaluations import AgentCaseRunner
 from casefile.features.evaluation.adapters.outbound.golden import load_suite
+from casefile.features.investigation.application.findings_policy import LEGACY_FINDINGS
 from casefile.features.investigation.application.guard_policy import guard_denial_reasons
 from tests.test_agent_guard import RecordingDecisions
 
@@ -37,7 +38,7 @@ async def test_guard_probes_label_both_outcomes_and_positives_are_the_agents_rea
     assert {p.expected for p in guards} == {True, False}
     for case in load_suite(root).cases:
         recorder = RecordingDecisions()
-        await AgentCaseRunner(decisions=recorder).run(case)
+        await AgentCaseRunner(decisions=recorder, findings_policy=LEGACY_FINDINGS).run(case)
         sent = sorted(r.state_json for r in recorder.requests if r.purpose == "guard")
         positives = sorted(
             p.question.state_json for p in guards if p.case_id == case.id and p.expected is True

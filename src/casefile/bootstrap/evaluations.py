@@ -45,7 +45,13 @@ from casefile.features.investigation.application.agent_types import (
     TraceEvent,
     tool_input,
 )
+from casefile.features.investigation.application.banking_policy import BANKING_KINDS
 from casefile.features.investigation.application.decisions import DecisionGateway
+from casefile.features.investigation.application.findings_policy import (
+    CURRENT_FINDINGS,
+    FINDINGS_VERSIONS,
+    LEGACY_FINDINGS,
+)
 from casefile.features.investigation.application.start_run import StartRunCommand
 from casefile.features.investigation.application.worker import RunWorker
 from casefile.features.investigation.domain.budget import BudgetLimits, BudgetUsage
@@ -129,9 +135,36 @@ def recordings(
 
 
 @dataclass(frozen=True, slots=True)
+class EvaluationProfile:
+    """A reference suite and the findings policy it is evaluated under."""
+
+    name: str
+    label: str
+    subdirectory: str
+    findings_policy: str
+
+
+# The frozen 30 cases are specified against the historical rules and stay comparable over time.
+LEGACY_PROFILE = EvaluationProfile("legacy", "findings-v1 regression profile", "", LEGACY_FINDINGS)
+# The current suite runs the policy that new investigations use, including banking workflows.
+CURRENT_PROFILE = EvaluationProfile(
+    "current", "current-policy profile (findings-v2)", "current", CURRENT_FINDINGS
+)
+PROFILES = {profile.name: profile for profile in (LEGACY_PROFILE, CURRENT_PROFILE)}
+# Document dossiers read six evidence tools; the historical alerts read five.
+BANKING_TOOL_CALLS = 6
+CORE_TOOL_CALLS = 5
+
+
+@dataclass(frozen=True, slots=True)
 class AgentCaseRunner:
     model: LanguageModel | None = None
     decisions: DecisionGateway | None = None
+    findings_policy: str = CURRENT_FINDINGS
+
+    def __post_init__(self) -> None:
+        if self.findings_policy not in FINDINGS_VERSIONS:
+            raise ValueError("Unknown findings policy version.")
 
     async def run(self, case: BenchmarkCase) -> Observation:
         started = perf_counter()
@@ -156,7 +189,17 @@ class AgentCaseRunner:
             checked(
                 await app.start_run.execute(
                     StartRunCommand(
-                        run_id, case_id, checked(BudgetLimits.create(5, 100_000, Decimal("1")))
+                        run_id,
+                        case_id,
+                        checked(
+                            BudgetLimits.create(
+                                BANKING_TOOL_CALLS
+                                if context.kind in BANKING_KINDS
+                                else CORE_TOOL_CALLS,
+                                100_000,
+                                Decimal("1"),
+                            )
+                        ),
                     )
                 )
             )
@@ -169,7 +212,7 @@ class AgentCaseRunner:
                 clock,
                 MemoryTelemetry(),
                 self.decisions or demo_decisions(),
-                findings_policy="findings-v1",
+                findings_policy=self.findings_policy,
             )
             await RunWorker(app.queue, agent).run_once()
         except Exception as failure:
@@ -225,26 +268,57 @@ class AgentCaseRunner:
 
 
 async def run_evaluations(
-    root: Path, output: Path, *, model: LanguageModel | None = None
+    root: Path,
+    output: Path,
+    *,
+    profile: EvaluationProfile,
+    model: LanguageModel | None = None,
 ) -> SuiteReport:
     suite = load_suite(root)
-    report = await EvaluateSuite(AgentCaseRunner(model)).execute(
+    report = await EvaluateSuite(
+        AgentCaseRunner(model, findings_policy=profile.findings_policy)
+    ).execute(
         suite.cases,
         load_thresholds(root / "thresholds.toml"),
         mode="http" if model is not None else "replay",
         dataset_sha256=suite.sha256,
+        profile=profile.label,
+        findings_policy=profile.findings_policy,
     )
     write_report(report, output)
     return report
 
 
-async def execute_cli(root: Path, output: Path, mode: str) -> SuiteReport:
+def selected_profiles(name: str) -> tuple[EvaluationProfile, ...]:
+    return tuple(PROFILES.values()) if name == "all" else (PROFILES[name],)
+
+
+async def execute_cli(
+    dataset: Path, output: Path, mode: str, profiles: tuple[EvaluationProfile, ...]
+) -> tuple[SuiteReport, ...]:
+    """Run each profile from `dataset/<subdirectory>` and report to `output/<subdirectory>`."""
+    reports: list[SuiteReport] = []
     if mode == "replay":
-        return await run_evaluations(root, output)
+        for profile in profiles:
+            reports.append(
+                await run_evaluations(
+                    dataset / profile.subdirectory, output / profile.subdirectory, profile=profile
+                )
+            )
+        return tuple(reports)
     settings = ModelSettings.from_environment(os.environ)
     async with httpx.AsyncClient(trust_env=False) as client:
         model = HttpLanguageModel(client, settings, AgentJsonCodec())
-        return await run_evaluations(root, output, model=model)
+        for profile in profiles:
+            reports.append(
+                await run_evaluations(
+                    dataset / profile.subdirectory,
+                    output / profile.subdirectory,
+                    profile=profile,
+                    model=model,
+                )
+            )
+    return tuple(reports)
 
 
 def main() -> None:
@@ -252,15 +326,27 @@ def main() -> None:
     parser.add_argument("--dataset", type=Path, default=Path("evals"))
     parser.add_argument("--output", type=Path, default=Path("build/evals"))
     parser.add_argument("--mode", choices=("replay", "http"), default="replay")
+    parser.add_argument(
+        "--profile",
+        choices=("all", *PROFILES),
+        default="all",
+        help="legacy: frozen findings-v1 cases; current: the policy new investigations use.",
+    )
     args = parser.parse_args()
+    profiles = selected_profiles(args.profile)
     try:
-        report = asyncio.run(execute_cli(args.dataset, args.output, args.mode))
+        reports = asyncio.run(execute_cli(args.dataset, args.output, args.mode, profiles))
     except (OSError, ValueError) as error:
         # Configuration errors must fail, without printing environment credentials.
         parser.exit(2, f"Evaluation configuration failed ({type(error).__name__}).\n")
-    print(f"{'PASS' if report.passed else 'FAIL'}: {report.metrics.cases} cases ({report.mode}).")
-    print(f"Reports: {args.output / 'report.md'} and {args.output / 'report.json'}")
-    raise SystemExit(0 if report.passed else 1)
+    for profile, report in zip(profiles, reports, strict=True):
+        where = args.output / profile.subdirectory
+        print(
+            f"{'PASS' if report.passed else 'FAIL'}: {profile.label}, "
+            f"{report.metrics.cases} cases ({report.mode})."
+        )
+        print(f"Reports: {where / 'report.md'} and {where / 'report.json'}")
+    raise SystemExit(0 if all(report.passed for report in reports) else 1)
 
 
 if __name__ == "__main__":

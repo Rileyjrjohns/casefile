@@ -136,7 +136,12 @@ class MemoryRunner:
 async def test_suite_keeps_case_and_dataset_identity() -> None:
     case = BenchmarkCase("case-001", "volume", "A fictional volume alert.", EXPECTED, "{}", "{}")
     report = await EvaluateSuite(MemoryRunner()).execute(
-        (case,), replace(LIMITS, min_cases=1), mode="replay", dataset_sha256="a" * 64
+        (case,),
+        replace(LIMITS, min_cases=1),
+        mode="replay",
+        dataset_sha256="a" * 64,
+        profile="test profile",
+        findings_policy="findings-v1",
     )
     assert report.passed
     assert report.dataset_sha256 == "a" * 64

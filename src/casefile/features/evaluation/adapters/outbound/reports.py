@@ -27,6 +27,8 @@ def markdown(report: SuiteReport) -> str:
         "",
         f"Result: **{'PASS' if report.passed else 'FAIL'}** · Mode: `{report.mode}`",
         "",
+        f"Profile: **{report.profile}** · Findings policy: `{report.findings_policy}`",
+        "",
         f"Dataset SHA-256: `{report.dataset_sha256}`",
         "",
         cost_note,
