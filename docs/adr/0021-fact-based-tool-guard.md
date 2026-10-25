@@ -1,7 +1,6 @@
-# ADR 021 — Pre-tool guard decided from verifiable facts
+# ADR 021: Pre-tool guard decided from verifiable facts
 
-- Status: accepted
-- Date: 2026-10-25
+Status: accepted.
 
 ## Context
 
