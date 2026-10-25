@@ -79,7 +79,10 @@ its citations are retained unchanged. See the [HTTP contract](interfaces.md).
 A predicted key counts at most once as a true positive. Duplicate predictions
 count as false positives. For an empty expected set and empty predictions,
 precision and recall are 1. If signals were expected but none were produced,
-both are 0. An empty citation denominator gives a source-invalidity rate of 0;
+both are 0. A case whose run did not reach `AWAITING_REVIEW` without errors is not
+scored per case: its precision and recall are `null` in the JSON report and an em
+dash in the Markdown table, never 1.000, while its missing signals still count in
+the micro averages and the completion gate. An empty citation denominator gives a source-invalidity rate of 0;
 the mandatory completion gate prevents rejected model outputs from passing by
 producing no conclusions. A failed run remains in every applicable denominator.
 Source validity establishes record provenance, not factual entailment of prose.
