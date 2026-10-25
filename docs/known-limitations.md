@@ -14,7 +14,11 @@
 - The tabular model is calibrated only against its synthetic generator. Runtime
   features use incomplete-window proxies and no currency conversion. It cannot
   perform general language decisions; local routing uses explicit policy.
-- The 30 cases are small, correlated and pending independent human review.
+- The 30 frozen cases and the 66 current-policy cases are small, correlated,
+  written by the authors of the rules and pending independent human review. The
+  current expectations were reasoned from the documented policy before each run,
+  but their injection labels know the demo pattern set and a perfect score only
+  shows regression consistency.
   Historical regression excludes the new risk signal; separate tests cover its
   complete integration. Synthetic Jev/LLM protocol fixtures are not vendor results.
 - Historical `findings-v1` and the frozen corpus retain their documented monthly
@@ -23,6 +27,10 @@
   evidence for an unresolved open screening alert. The KYC baseline is assumed
   to be EUR; foreign-currency amounts produce an information gap. Returned tool
   snapshots do not establish that the entire month's activity was retrieved.
+- The banking workflows apply their document comparisons, flagged instruction-like
+  text, open KYC-mismatch alerts and (outside the identity workflow) exact list
+  entries. They do not apply the transaction-volume rules, and payment and credit
+  documents are compared in EUR only.
 - Provider-compatible structured HTTP contracts are tested offline. A
   [single live Jev measurement](measurements/jev-2026-10-24.md) matched 23/30
   reference recommendations, including disagreements on injection-only cases.

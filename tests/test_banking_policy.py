@@ -1,4 +1,5 @@
 from dataclasses import replace
+from datetime import UTC, date, datetime
 
 import pytest
 
@@ -6,7 +7,12 @@ from casefile.features.investigation.adapters.outbound.tools.seed import load_se
 from casefile.features.investigation.application.agent_policy import candidates
 from casefile.features.investigation.application.agent_types import EvidenceBatch
 from casefile.features.investigation.application.banking_policy import banking_findings, is_concern
-from casefile.features.investigation.application.tools import CaseDocument, ToolName
+from casefile.features.investigation.application.tools import (
+    AlertRecord,
+    CaseDocument,
+    SanctionEntry,
+    ToolName,
+)
 
 
 def evidence(number: int) -> tuple[EvidenceBatch, ...]:
@@ -179,3 +185,51 @@ def test_injection_in_a_document_is_retained_as_a_sourced_concern() -> None:
     injected = [s for s in signals if s.key == "instruction:doc-103"]
     assert len(injected) == 1
     assert injected[0].sources[0].tool == ToolName.DOCUMENTS
+
+
+def with_alert(batches: tuple[EvidenceBatch, ...], kind: str) -> tuple[EvidenceBatch, ...]:
+    alert = AlertRecord(
+        "alert-900",
+        batches[0].query,
+        kind,
+        "open",
+        datetime(2026, 10, 20, 9, tzinfo=UTC),
+        "Fictional alert.",
+    )
+    return (*batches, EvidenceBatch(ToolName.ALERTS, batches[0].query, (alert,)))
+
+
+def test_an_open_kyc_mismatch_alert_is_a_concern_in_every_banking_workflow() -> None:
+    # ADR 018: a KYC mismatch blocks closure; the dossier comparison must not hide it.
+    for number, kind in (
+        (101, "payment_fraud"),
+        (102, "credit_document_fraud"),
+        (103, "sanctions_identity_review"),
+    ):
+        signals = candidates(with_alert(evidence(number), "kyc_mismatch"), frozenset(), kind=kind)
+        concern = [s for s in signals if s.key == "kyc:alert-900"]
+        assert len(concern) == 1 and is_concern(concern[0])
+        assert [(s.tool, s.record_id) for s in concern[0].sources] == [
+            (ToolName.ALERTS, "alert-900")
+        ]
+        quiet = candidates(
+            with_alert(evidence(number), "unusual_transaction"), frozenset(), kind=kind
+        )
+        assert not any(s.key.startswith("kyc:") for s in quiet)
+
+
+def test_an_exact_list_entry_is_a_concern_except_for_the_identity_subject() -> None:
+    entry = SanctionEntry("san-900", "Demo Juniper Engineering", (), "FICTIONAL", date(2026, 9, 1))
+    for number, kind, concern in (
+        (101, "payment_fraud", True),
+        (102, "credit_document_fraud", True),
+        (103, "sanctions_identity_review", False),
+    ):
+        batches = tuple(
+            replace(batch, records=(entry,)) if batch.tool == ToolName.SANCTIONS else batch
+            for batch in evidence(number)
+        )
+        listed = [
+            s for s in candidates(batches, frozenset(), kind=kind) if s.key.startswith("sanctions:")
+        ]
+        assert bool(listed) is concern, kind
