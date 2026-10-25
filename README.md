@@ -139,24 +139,43 @@ make sync
 make eval
 ```
 
-The 30 frozen cases produce `build/evals/report.md` and `.json`. The typed adapter
-comparison produces `decisions.md`, `.json` and individual observations there.
-The runner never rewrites golden files. It explicitly uses historical `findings-v1`.
-New investigations use `findings-v2`, which adds monthly transfer aggregation and
-unresolved-screening evidence gaps. Separate tests cover the new behavior and
-upgrade compatibility; the old 30/30 score does not evaluate these additions.
+`make eval` runs two separate suites and gates both, each with its own report:
 
-| Structural regression metric | Replay result |
-| --- | ---: |
-| Signal precision / recall | 1.000 / 1.000 |
-| Correct recommendations | 30 / 30 |
-| Invalid accepted citations | 0 / 31 |
-| Runs reaching human review | 30 / 30 |
+| Suite | Cases | Policy | Report |
+| --- | ---: | --- | --- |
+| findings-v1 regression profile (`evals/golden/`) | 30 | `findings-v1`, frozen | `build/evals/report.md` and `.json` |
+| Current-policy profile (`evals/current/`) | 69 | `findings-v2` | `build/evals/current/report.md` and `.json` |
 
-These results use authored synthetic narrative fixtures and the explicit demo
-decision policy. The historical regression profile excludes the additional risk
-signal; risk-enabled execution has separate source, budget, persistence and exact
-replay tests. Labels await independent human review. This is not real fraud accuracy.
+The typed adapter comparison produces `decisions.md`, `.json` and individual
+observations in `build/evals/`. The runner never rewrites golden files.
+
+The frozen 30 cases keep their historical rules comparable over time; they were
+written in one batch, 13 of them expect no signal, and they cover only three alert
+kinds and no banking dossier. They are a regression guard. The 69 current cases run
+what new investigations use: `findings-v2` (monthly EUR aggregation, currency and
+unresolved-screening gaps), the payment, credit-document and sanctions-identity
+workflows with consistent and inconsistent variants, paraphrased prompt injections
+in notes and documents, benign look-alike text, missing KYC, mixed cases and
+boundary values. Each case's expectation and rationale were written from the
+documented policy before the case was run, and the current thresholds are strict
+(precision, recall and recommendation accuracy 1.0, no invalid citation, every run
+completing). See [evaluations](docs/evaluations.md) and
+[ADR 023](docs/adr/0023-separate-current-policy-evaluation-suite.md).
+
+| Structural regression metric | findings-v1 profile | Current-policy profile |
+| --- | ---: | ---: |
+| Signal precision / recall | 1.000 / 1.000 | 1.000 / 1.000 |
+| Correct recommendations | 30 / 30 | 69 / 69 |
+| Invalid accepted citations | 0 / 31 | 0 / 260 |
+| Runs reaching human review | 30 / 30 | 69 / 69 |
+
+These results use synthetic narrative fixtures and the explicit demo decision
+policy. A per-case row for a run that did not complete shows an em dash instead of
+precision and recall. The historical regression profile excludes the additional
+risk signal; risk-enabled execution has separate source, budget, persistence and
+exact replay tests. Labels of both suites await independent human review; the
+current cases were authored by the team that wrote the rules, and their injection
+labels know the demo pattern set. This is not real fraud accuracy.
 
 The independent **evaluation runner** sends identical questions to each decision
 adapter and reports accuracy, ten-bin ECE, p50/p95 latency and estimated USD per
@@ -236,8 +255,8 @@ Vite proxies `/api` to port 8000.
 | `make test-mcp` | Evidence contracts and stdio/HTTP protocol tests |
 | `make demo-agent` | Isolated command-line regression-profile investigation |
 | `make train-risk` | Reproduce the CSV, checkpoint, weights and metrics |
-| `make eval` | Structural thresholds and offline decision contracts |
-| `make eval EVAL_MODE=http` | Live narrative model with replayed fictional tools |
+| `make eval` | Structural thresholds of both suites (findings-v1 and current-policy) and offline decision contracts |
+| `make eval EVAL_MODE=http` | Live narrative model with replayed fictional tools, for both suites |
 | `make eval-decisions-live` | Live comparison; use `DECISION_PROVIDERS="local jev"` with a Jev-only setup |
 
 CI runs on PRs and pushes to `main`, builds the front and uploads reports.

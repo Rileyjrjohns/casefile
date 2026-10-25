@@ -59,7 +59,8 @@ against isolated fictional cases. Existing local investigations are not rejudged
 or rewritten by an upgrade.
 
 The historical reference suite explicitly runs `findings-v1`. Current runs use
-`findings-v2`; separate tests and the dated live observations cover its additions.
+`findings-v2`; the separate 69-case current-policy suite, other tests and the dated
+live observations cover its additions.
 See [evaluations](evaluations.md), [provider measurements](measurements/jev-2026-10-24.md)
 and [known limitations](known-limitations.md) for interpretation boundaries.
 

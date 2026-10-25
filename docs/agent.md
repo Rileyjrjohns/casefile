@@ -155,7 +155,7 @@ For offline replay, inject `ReplayEvidenceGateway(events, codec)` and
 `ReplayLanguageModel(events, codec)` and `ReplayDecisionGateway(events)` into a
 fresh `InvestigationAgent`, preserving the risk-enabled flag and model handles. Preserve
 the application policy version as well (`findings_policy="findings-v1"` for the
-frozen corpus). A resumed investigation reuses its recorded findings version;
+frozen corpus, `findings-v2` for the current-policy evaluation suite). A resumed investigation reuses its recorded findings version;
 already-started legacy journals without a version use v1. Running historical evidence under a newer
 closure constraint is a policy re-evaluation rather than exact historical replay. Preserve
 the original case context, run identifiers and budget limits to compare the

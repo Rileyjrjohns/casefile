@@ -22,3 +22,4 @@
 - [0020-curated-correction-exports](./0020-curated-correction-exports.md)
 - [0021-fact-based-tool-guard](./0021-fact-based-tool-guard.md)
 - [0022-deterministic-conclusion-text-and-summary-backstop](./0022-deterministic-conclusion-text-and-summary-backstop.md)
+- [0023-separate-current-policy-evaluation-suite](./0023-separate-current-policy-evaluation-suite.md)

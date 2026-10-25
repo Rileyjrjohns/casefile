@@ -14,7 +14,7 @@
 - The tabular model is calibrated only against its synthetic generator. Runtime
   features use incomplete-window proxies and no currency conversion. It cannot
   perform general language decisions; local routing uses explicit policy.
-- The 30 frozen cases and the 66 current-policy cases are small, correlated,
+- The 30 frozen cases and the 69 current-policy cases are small, correlated,
   written by the authors of the rules and pending independent human review. The
   current expectations were reasoned from the documented policy before each run,
   but their injection labels know the demo pattern set and a perfect score only
