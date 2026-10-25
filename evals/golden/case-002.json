@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "case-002",
+  "category": "boundary",
+  "rationale": "Zero is not strictly above zero.",
+  "context": {
+    "subject_id": "demo-customer-002",
+    "alert_id": "golden-alert-002",
+    "kind": "unusual_transaction",
+    "description": "Zero activity and zero declared volume. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-002",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-002",
+          "legal_name": "Fictional Lantern Quay Account 002",
+          "country": "FR",
+          "occupation": "Fictional demonstration trading activity",
+          "expected_monthly_volume": "0.00",
+          "reviewed_at": "2026-10-24T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-002",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-002",
+          "booked_at": "2026-10-24T09:00:00Z",
+          "amount": "0.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Copper Orchard 001",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-002",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-002",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Lantern Quay Account 002",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "Zero is not strictly above zero.",
+    "signals": [],
+    "recommendation": "close"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "case-030",
+  "category": "clear",
+  "rationale": "A complete profile and no returned risk signals support the demo close recommendation.",
+  "context": {
+    "subject_id": "demo-customer-030",
+    "alert_id": "golden-alert-030",
+    "kind": "unusual_transaction",
+    "description": "Known profile with empty activity history. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-030",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-030",
+          "legal_name": "Fictional Lantern Quay Account 030",
+          "country": "FR",
+          "occupation": "Fictional demonstration trading activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-24T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-030",
+      "records": []
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-030",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-030",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Lantern Quay Account 030",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "A complete profile and no returned risk signals support the demo close recommendation.",
+    "signals": [],
+    "recommendation": "close"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "case-014",
+  "category": "sanctions",
+  "rationale": "A closed historical alert without a returned list match is not a current signal.",
+  "context": {
+    "subject_id": "demo-customer-014",
+    "alert_id": "golden-alert-014",
+    "kind": "sanctions_match",
+    "description": "Closed historical sanctions alert. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-014",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-014",
+          "legal_name": "Fictional Lantern Quay Account 014",
+          "country": "FR",
+          "occupation": "Fictional demonstration trading activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-24T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-014",
+      "records": []
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-014",
+      "records": [
+        {
+          "record_id": "alert-001",
+          "customer_id": "demo-customer-014",
+          "kind": "sanctions_match",
+          "status": "closed",
+          "created_at": "2026-10-24T09:00:00Z",
+          "summary": "Fictional sanctions_match alert (closed)."
+        }
+      ]
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-014",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Lantern Quay Account 014",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "A closed historical alert without a returned list match is not a current signal.",
+    "signals": [],
+    "recommendation": "close"
+  }
+}

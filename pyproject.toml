@@ -1,0 +1,161 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "casefile"
+version = "0.1.0"
+description = "Fraud and compliance investigation using fictional banking data."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "sqlalchemy[asyncio]>=2.0.40,<2.1",
+    "alembic>=1.15,<2",
+    "psycopg[binary]>=3.2,<4",
+    "pydantic>=2.11,<3",
+    "mcp>=2.3,<3",
+    "jsonschema>=4.23,<5",
+    "httpx>=0.28,<1",
+    "opentelemetry-api>=1.45,<2",
+    "opentelemetry-sdk>=1.45,<2",
+    "opentelemetry-exporter-otlp-proto-http>=1.45,<2",
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.34,<1",
+]
+
+[project.scripts]
+casefile-demo-mcp = "casefile.bootstrap.tools:main"
+casefile-investigate = "casefile.bootstrap.demo_agent:main"
+casefile-eval = "casefile.bootstrap.evaluations:main"
+casefile-mcp = "casefile.bootstrap.mcp_server:main"
+casefile-serve = "casefile.bootstrap.server:main"
+casefile-train-risk = "casefile.features.risk_scoring.adapters.outbound.training:main"
+casefile-decisions = "casefile.bootstrap.decision_benchmark:main"
+
+[dependency-groups]
+dev = [
+    "grimp>=3.17,<4",
+    "hypothesis>=6.130,<7",
+    "import-linter>=2.7,<3",
+    "mypy>=1.15,<2",
+    "pytest>=8.3,<10",
+    "pytest-asyncio>=1,<2",
+    "pytest-cov>=6,<8",
+    "ruff>=0.11,<1",
+    "testcontainers>=4.15,<5",
+    "types-jsonschema>=4.23,<5",
+]
+training = [
+    "numpy>=2,<3",
+    "scikit-learn>=1.6,<2",
+    "scikit-learn-stubs>=0.0.3",
+    "torch>=2.7,<3",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/casefile"]
+exclude = ["src/casefile/features/*/tests/**"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"models/risk-v1.json" = "casefile/models/risk-v1.json"
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/quality",
+    "/docs",
+    "/README.md",
+    "/Makefile",
+    "/pyproject.toml",
+    "/uv.lock",
+    "/.python-version",
+    "/alembic.ini",
+    "/migrations",
+    "/evals",
+    "/web",
+    "/models",
+    "/data",
+    "/Dockerfile",
+    "/compose.yaml",
+    "/.node-version",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src", "tests", "quality", "migrations"]
+warn_unreachable = true
+disallow_any_unimported = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "src/casefile/features"]
+addopts = ["-ra", "--strict-config", "--strict-markers", "--import-mode=importlib"]
+filterwarnings = ["error"]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "postgres: requires Docker and a disposable PostgreSQL Testcontainer",
+    "mcp: evidence contracts and local subprocess MCP protocol tests",
+]
+
+[tool.coverage.run]
+source = ["casefile"]
+branch = true
+omit = ["*/tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80
+
+[tool.importlinter]
+root_package = "casefile"
+include_external_packages = true
+exclude_type_checking_imports = false
+contract_types = ["stdlib-only: quality.contracts.StandardLibraryOnlyContract"]
+
+[[tool.importlinter.contracts]]
+name = "Bootstrap wires features; shared stays independent"
+type = "layers"
+containers = ["casefile"]
+layers = ["bootstrap", "features", "shared"]
+exhaustive = true
+
+[[tool.importlinter.contracts]]
+name = "Features are independent"
+type = "independence"
+modules = ["casefile.features.*"]
+
+[[tool.importlinter.contracts]]
+name = "Dependencies point toward the domain in each feature"
+type = "layers"
+containers = ["casefile.features.*"]
+layers = ["tests", "adapters", "application", "domain"]
+exhaustive = true
+
+[[tool.importlinter.contracts]]
+name = "Inbound and outbound adapters are wired by bootstrap"
+type = "layers"
+containers = ["casefile.features.*.adapters"]
+layers = ["inbound | outbound"]
+exhaustive = true
+
+[[tool.importlinter.contracts]]
+name = "Third-party packages stay outside domain, application and shared"
+type = "stdlib-only"

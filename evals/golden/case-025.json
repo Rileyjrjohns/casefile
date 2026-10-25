@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "case-025",
+  "category": "missing_data",
+  "rationale": "Missing KYC without any signals requires more information.",
+  "context": {
+    "subject_id": "demo-customer-025",
+    "alert_id": "golden-alert-025",
+    "kind": "kyc_inconsistency",
+    "description": "No customer evidence returned. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-025",
+      "records": []
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-025",
+      "records": []
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-025",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-025",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "Missing KYC without any signals requires more information.",
+    "signals": [],
+    "recommendation": "request_information"
+  }
+}

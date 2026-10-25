@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "case-013",
+  "category": "sanctions",
+  "rationale": "Both returned entries require their own sourced signals; this is not identity verification.",
+  "context": {
+    "subject_id": "demo-customer-013",
+    "alert_id": "golden-alert-013",
+    "kind": "sanctions_match",
+    "description": "Two returned list entries. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-013",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-013",
+          "legal_name": "Fictional Lantern Quay Account 013",
+          "country": "FR",
+          "occupation": "Fictional demonstration trading activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-24T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-013",
+      "records": []
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-013",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-013",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Lantern Quay Account 013",
+      "records": [
+        {
+          "record_id": "san-001",
+          "name": "Fictional Lantern Quay Account 013",
+          "aliases": [],
+          "program": "Fictional demonstration list",
+          "listed_at": "2026-01-01"
+        },
+        {
+          "record_id": "san-002",
+          "name": "Fictional Glass Harbor 013",
+          "aliases": [
+            "Fictional Lantern Quay Account 013"
+          ],
+          "program": "Fictional demonstration list",
+          "listed_at": "2026-01-01"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "summary": "Both returned entries require their own sourced signals; this is not identity verification.",
+    "signals": [
+      {
+        "key": "sanctions:san-001",
+        "statement": "Exact name match on the fictional demonstration list.",
+        "confidence": 0.9,
+        "sources": [
+          {
+            "tool": "search_sanctions",
+            "record_id": "san-001"
+          }
+        ]
+      },
+      {
+        "key": "sanctions:san-002",
+        "statement": "Exact name match on the fictional demonstration list.",
+        "confidence": 0.9,
+        "sources": [
+          {
+            "tool": "search_sanctions",
+            "record_id": "san-002"
+          }
+        ]
+      }
+    ],
+    "recommendation": "escalate"
+  }
+}

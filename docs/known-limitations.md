@@ -1,0 +1,46 @@
+# Known limitations
+
+- All accounts, lists, alerts and transaction labels are fictional. No real fraud
+  detection, identity resolution or compliance effectiveness is established.
+- The local reviewer identity is fixed. An optional bearer gate is not a complete
+  authentication system. A malicious MCP client can fake its human interaction.
+- Demo injection detection recognizes one phrase. Source validation checks
+  provenance and signal membership, not the truth of natural-language claims.
+- The tabular model is calibrated only against its synthetic generator. Runtime
+  features use incomplete-window proxies and no currency conversion. It cannot
+  perform general language decisions; local routing uses explicit policy.
+- The 30 cases are small, correlated and pending independent human review.
+  Historical regression excludes the new risk signal; separate tests cover its
+  complete integration. Synthetic Jev/LLM protocol fixtures are not vendor results.
+- Historical `findings-v1` and the frozen corpus retain their documented monthly
+  volume and unmatched-screening gaps. New `findings-v2` investigations aggregate
+  observed EUR transfers within UTC calendar months and request identification
+  evidence for an unresolved open screening alert. The KYC baseline is assumed
+  to be EUR; foreign-currency amounts produce an information gap. Returned tool
+  snapshots do not establish that the entire month's activity was retrieved.
+- Provider-compatible structured HTTP contracts are tested offline. A
+  [single live Jev measurement](measurements/jev-2026-10-24.md) matched 23/30
+  reference recommendations, including disagreements on injection-only cases.
+  Operational labels encode the demo policy and do not establish real-world
+  effectiveness. No live LLM comparison has been measured. Manual workflows
+  require explicit credentials, model names and prices for selected providers.
+- Raw decision questions and complete investigations supply different context.
+  Reproducing the three injection cases through the API/worker produced two
+  escalation recommendations and one request for information. A deterministic
+  [closure constraint](adr/0018-recommendation-closure-constraints.md) now blocks
+  closing recommendations when detected concerns or missing evidence remain;
+  this does not improve the model's raw benchmark score or detect unknown attacks.
+- Queue delivery is at least once. There is no dead-letter queue or attempt cap.
+  Unknown interrupted calls fail conservatively; a new run must be initiated.
+- Memory mode is single-process and transient. MCP pending confirmations are
+  process-local. PostgreSQL retains data; production backup/retention policies
+  and multi-instance confirmation storage are not provided.
+- The frontend is a review screen, not a full case-management administration UI.
+  Case creation uses API/MCP. History and new investigations are available in the
+  screen. Pre-migration run order is reconstructed from first trace timestamps
+  or job schedules, so original enqueue order may be approximate for old data.
+- Journals store evidence and model output. Observability intentionally omits
+  that content, and exporters are opt-in. No real data should be inserted.
+- Correction exports preserve human expectations and original evidence for
+  curation. They do not automatically rewrite the frozen corpus, retrain a model
+  or establish that the corrected statement is objectively true.

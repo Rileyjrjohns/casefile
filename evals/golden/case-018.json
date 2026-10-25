@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "case-018",
+  "category": "kyc",
+  "rationale": "Only the unresolved second alert contributes a signal.",
+  "context": {
+    "subject_id": "demo-customer-018",
+    "alert_id": "golden-alert-018",
+    "kind": "kyc_inconsistency",
+    "description": "Resolved and unresolved KYC alerts. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-018",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-018",
+          "legal_name": "Fictional Lantern Quay Account 018",
+          "country": "FR",
+          "occupation": "Fictional demonstration trading activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-24T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-018",
+      "records": []
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-018",
+      "records": [
+        {
+          "record_id": "alert-001",
+          "customer_id": "demo-customer-018",
+          "kind": "kyc_mismatch",
+          "status": "closed",
+          "created_at": "2026-10-24T09:00:00Z",
+          "summary": "Fictional kyc_mismatch alert (closed)."
+        },
+        {
+          "record_id": "alert-002",
+          "customer_id": "demo-customer-018",
+          "kind": "kyc_mismatch",
+          "status": "open",
+          "created_at": "2026-10-24T09:00:00Z",
+          "summary": "Fictional kyc_mismatch alert (open)."
+        }
+      ]
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-018",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Lantern Quay Account 018",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "Only the unresolved second alert contributes a signal.",
+    "signals": [
+      {
+        "key": "kyc:alert-002",
+        "statement": "An open alert reports inconsistent KYC information.",
+        "confidence": 0.7,
+        "sources": [
+          {
+            "tool": "list_alerts",
+            "record_id": "alert-002"
+          }
+        ]
+      }
+    ],
+    "recommendation": "escalate"
+  }
+}

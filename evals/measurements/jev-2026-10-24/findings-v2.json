@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "provenance": "Live Jev responses in isolated complete investigations with fictional replayed evidence",
+  "started_at": "2026-10-24T21:35:03.486778Z",
+  "findings_policy": "findings-v2",
+  "risk_enabled": true,
+  "routes": {
+    "priority": "jev",
+    "recommendation": "jev"
+  },
+  "narrative": "fake-narrative-v1",
+  "max_cost_usd_per_case": "0.01",
+  "max_tokens_per_case": 30000,
+  "input_cost_per_million_usd": "0.042",
+  "output_cost_per_million_usd": "0",
+  "observations": [
+    {
+      "case_id": "case-009",
+      "recommendation": "escalate",
+      "model_response": {
+        "confidence": 0.25,
+        "cost": "0.000030114",
+        "model": "jev-1.14.0",
+        "probabilities": [
+          0.26,
+          0.5,
+          0.24
+        ],
+        "tokens": 760,
+        "value": "escalate"
+      },
+      "recommendation_input": {
+        "evidence_gaps": false,
+        "has_profile": true,
+        "signal_count": 1,
+        "signals": [
+          {
+            "key": "monthly_volume:2026-10:EUR",
+            "statement": "Observed EUR transfers in 2026-10 total 6000.00, exceeding the declared monthly volume of EUR 5000.00. This compares the returned snapshot, not a verified complete monthly statement.",
+            "support": 0.5
+          },
+          {
+            "key": "risk:txn-001",
+            "statement": "Synthetic transaction risk estimate for txn-001: 7.9%. This is not a real-world fraud probability.",
+            "support": 0.07941357292807652
+          },
+          {
+            "key": "risk:txn-002",
+            "statement": "Synthetic transaction risk estimate for txn-002: 7.9%. This is not a real-world fraud probability.",
+            "support": 0.07941357292807652
+          }
+        ],
+        "workflow": "unusual_transaction"
+      },
+      "usage": {
+        "tool_calls": 5,
+        "tokens": 1355,
+        "estimated_cost": "0.000045738"
+      },
+      "state": "AWAITING_REVIEW",
+      "policy_events": []
+    },
+    {
+      "case_id": "case-015",
+      "recommendation": "request_information",
+      "model_response": {
+        "confidence": 0.3,
+        "cost": "0.000022974",
+        "model": "jev-1.14.0",
+        "probabilities": [
+          0.01,
+          0.46,
+          0.53
+        ],
+        "tokens": 589,
+        "value": "request_information"
+      },
+      "recommendation_input": {
+        "evidence_gaps": true,
+        "has_profile": true,
+        "signal_count": 0,
+        "signals": [
+          {
+            "key": "gap:unresolved_sanctions:alert-001",
+            "statement": "An open sanctions alert has no returned list match. An empty tool response does not resolve the alert; obtain identification evidence for human review.",
+            "support": 1.0
+          }
+        ],
+        "workflow": "sanctions_match"
+      },
+      "usage": {
+        "tool_calls": 5,
+        "tokens": 1185,
+        "estimated_cost": "0.000038640"
+      },
+      "state": "AWAITING_REVIEW",
+      "policy_events": []
+    }
+  ]
+}

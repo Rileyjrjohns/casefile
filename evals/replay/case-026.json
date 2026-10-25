@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "provenance": "synthetic-fixture",
+  "request": {
+    "context": {
+      "subject_id": "demo-customer-026",
+      "alert_id": "golden-alert-026",
+      "kind": "kyc_inconsistency",
+      "description": "Large transfer without a KYC baseline. Entirely fictional evaluation case."
+    },
+    "evidence": [
+      {
+        "tool": "get_kyc_profile",
+        "query": "demo-customer-026",
+        "records": []
+      },
+      {
+        "tool": "list_transactions",
+        "query": "demo-customer-026",
+        "records": [
+          {
+            "record_id": "txn-001",
+            "customer_id": "demo-customer-026",
+            "booked_at": "2026-10-24T09:00:00Z",
+            "amount": "99999.00",
+            "currency": "EUR",
+            "counterparty": "Fictional Copper Orchard 001",
+            "country": "FR"
+          }
+        ]
+      },
+      {
+        "tool": "list_alerts",
+        "query": "demo-customer-026",
+        "records": []
+      },
+      {
+        "tool": "list_investigator_notes",
+        "query": "demo-customer-026",
+        "records": []
+      }
+    ],
+    "signals": [],
+    "max_output_tokens": 1024,
+    "prompt_version": "casefile-narrative-v1"
+  },
+  "response": {
+    "model": "synthetic-narrative-v1",
+    "summary": "Large transfer without a KYC baseline. An amount cannot be compared to an absent declared volume; request information. Human review is required.",
+    "statements": [],
+    "input_tokens": 128,
+    "output_tokens": 64,
+    "estimated_cost": "0"
+  },
+  "reservation": {
+    "tool_calls": 0,
+    "tokens": 1536,
+    "estimated_cost": "0"
+  }
+}

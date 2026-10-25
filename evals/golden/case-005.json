@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "case-005",
+  "category": "boundary",
+  "rationale": "A one-cent excess is a volume signal under the demonstration rule.",
+  "context": {
+    "subject_id": "demo-customer-005",
+    "alert_id": "golden-alert-005",
+    "kind": "unusual_transaction",
+    "description": "One cent above the declared volume. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-005",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-005",
+          "legal_name": "Fictional Lantern Quay Account 005",
+          "country": "FR",
+          "occupation": "Fictional demonstration trading activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-24T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-005",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-005",
+          "booked_at": "2026-10-24T09:00:00Z",
+          "amount": "5000.01",
+          "currency": "EUR",
+          "counterparty": "Fictional Copper Orchard 001",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-005",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-005",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Lantern Quay Account 005",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "A one-cent excess is a volume signal under the demonstration rule.",
+    "signals": [
+      {
+        "key": "volume:txn-001",
+        "statement": "Transfer txn-001 exceeds the declared monthly volume.",
+        "confidence": 0.8,
+        "sources": [
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-001"
+          },
+          {
+            "tool": "get_kyc_profile",
+            "record_id": "kyc-001"
+          }
+        ]
+      }
+    ],
+    "recommendation": "escalate"
+  }
+}

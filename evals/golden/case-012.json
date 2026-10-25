@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "case-012",
+  "category": "sanctions",
+  "rationale": "The returned entry matches the legal name through its alias.",
+  "context": {
+    "subject_id": "demo-customer-012",
+    "alert_id": "golden-alert-012",
+    "kind": "sanctions_match",
+    "description": "Exact alias match. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-012",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-012",
+          "legal_name": "Fictional Lantern Quay Account 012",
+          "country": "FR",
+          "occupation": "Fictional demonstration trading activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-24T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-012",
+      "records": []
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-012",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-012",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Lantern Quay Account 012",
+      "records": [
+        {
+          "record_id": "san-001",
+          "name": "Fictional Glass Harbor 012",
+          "aliases": [
+            "Fictional Lantern Quay Account 012"
+          ],
+          "program": "Fictional demonstration list",
+          "listed_at": "2026-01-01"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "summary": "The returned entry matches the legal name through its alias.",
+    "signals": [
+      {
+        "key": "sanctions:san-001",
+        "statement": "Exact name match on the fictional demonstration list.",
+        "confidence": 0.9,
+        "sources": [
+          {
+            "tool": "search_sanctions",
+            "record_id": "san-001"
+          }
+        ]
+      }
+    ],
+    "recommendation": "escalate"
+  }
+}

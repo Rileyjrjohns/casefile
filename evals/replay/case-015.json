@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "provenance": "synthetic-fixture",
+  "request": {
+    "context": {
+      "subject_id": "demo-customer-015",
+      "alert_id": "golden-alert-015",
+      "kind": "sanctions_match",
+      "description": "Open sanctions alert with no exact tool match. Entirely fictional evaluation case."
+    },
+    "evidence": [
+      {
+        "tool": "get_kyc_profile",
+        "query": "demo-customer-015",
+        "records": [
+          {
+            "record_id": "kyc-001",
+            "customer_id": "demo-customer-015",
+            "legal_name": "Fictional Lantern Quay Account 015",
+            "country": "FR",
+            "occupation": "Fictional demonstration trading activity",
+            "expected_monthly_volume": "5000.00",
+            "reviewed_at": "2026-10-24T09:00:00Z"
+          }
+        ]
+      },
+      {
+        "tool": "list_transactions",
+        "query": "demo-customer-015",
+        "records": []
+      },
+      {
+        "tool": "list_alerts",
+        "query": "demo-customer-015",
+        "records": [
+          {
+            "record_id": "alert-001",
+            "customer_id": "demo-customer-015",
+            "kind": "sanctions_match",
+            "status": "open",
+            "created_at": "2026-10-24T09:00:00Z",
+            "summary": "Fictional sanctions_match alert (open)."
+          }
+        ]
+      },
+      {
+        "tool": "list_investigator_notes",
+        "query": "demo-customer-015",
+        "records": []
+      },
+      {
+        "tool": "search_sanctions",
+        "query": "Fictional Lantern Quay Account 015",
+        "records": []
+      }
+    ],
+    "signals": [],
+    "max_output_tokens": 1024,
+    "prompt_version": "casefile-narrative-v1"
+  },
+  "response": {
+    "model": "synthetic-narrative-v1",
+    "summary": "Open sanctions alert with no exact tool match. Known limitation: the demo policy trusts the tool snapshot and does not score an unmatched sanctions alert. Human review is required.",
+    "statements": [],
+    "input_tokens": 128,
+    "output_tokens": 64,
+    "estimated_cost": "0"
+  },
+  "reservation": {
+    "tool_calls": 0,
+    "tokens": 1536,
+    "estimated_cost": "0"
+  }
+}

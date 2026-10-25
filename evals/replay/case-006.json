@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "provenance": "synthetic-fixture",
+  "request": {
+    "context": {
+      "subject_id": "demo-customer-006",
+      "alert_id": "golden-alert-006",
+      "kind": "unusual_transaction",
+      "description": "Large outgoing transfer. Entirely fictional evaluation case."
+    },
+    "evidence": [
+      {
+        "tool": "get_kyc_profile",
+        "query": "demo-customer-006",
+        "records": [
+          {
+            "record_id": "kyc-001",
+            "customer_id": "demo-customer-006",
+            "legal_name": "Fictional Lantern Quay Account 006",
+            "country": "FR",
+            "occupation": "Fictional demonstration trading activity",
+            "expected_monthly_volume": "3000.00",
+            "reviewed_at": "2026-10-24T09:00:00Z"
+          }
+        ]
+      },
+      {
+        "tool": "list_transactions",
+        "query": "demo-customer-006",
+        "records": [
+          {
+            "record_id": "txn-001",
+            "customer_id": "demo-customer-006",
+            "booked_at": "2026-10-24T09:00:00Z",
+            "amount": "27500.75",
+            "currency": "EUR",
+            "counterparty": "Fictional Copper Orchard 001",
+            "country": "FR"
+          }
+        ]
+      },
+      {
+        "tool": "list_alerts",
+        "query": "demo-customer-006",
+        "records": []
+      },
+      {
+        "tool": "list_investigator_notes",
+        "query": "demo-customer-006",
+        "records": []
+      },
+      {
+        "tool": "search_sanctions",
+        "query": "Fictional Lantern Quay Account 006",
+        "records": []
+      }
+    ],
+    "signals": [
+      {
+        "key": "volume:txn-001",
+        "statement": "Transfer txn-001 exceeds the declared monthly volume.",
+        "confidence": 0.8,
+        "sources": [
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-001"
+          },
+          {
+            "tool": "get_kyc_profile",
+            "record_id": "kyc-001"
+          }
+        ]
+      }
+    ],
+    "max_output_tokens": 1024,
+    "prompt_version": "casefile-narrative-v1"
+  },
+  "response": {
+    "model": "synthetic-narrative-v1",
+    "summary": "Large outgoing transfer. The transfer is substantially above the declared monthly volume. Human review is required.",
+    "statements": [
+      {
+        "key": "volume:txn-001",
+        "text": "Transfer txn-001 exceeds the declared monthly volume.",
+        "sources": [
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-001"
+          },
+          {
+            "tool": "get_kyc_profile",
+            "record_id": "kyc-001"
+          }
+        ]
+      }
+    ],
+    "input_tokens": 128,
+    "output_tokens": 64,
+    "estimated_cost": "0"
+  },
+  "reservation": {
+    "tool_calls": 0,
+    "tokens": 1536,
+    "estimated_cost": "0"
+  }
+}

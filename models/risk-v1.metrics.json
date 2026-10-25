@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "model_version": "risk-v1",
+  "fictional": true,
+  "seed": 20261024,
+  "dataset_sha256": "d2159c1a6633623529a93c5b8f35bdea9719ca1504e022e74d6dc9eafdeeb460",
+  "rows": 6000,
+  "split_sizes": {
+    "train": 3600,
+    "validation": 1200,
+    "test": 1200
+  },
+  "positive_rate_test": 0.21833333333333332,
+  "features": [
+    "log_amount_ratio",
+    "new_counterparty",
+    "cross_border",
+    "night",
+    "log_transactions_24h",
+    "kyc_age_years"
+  ],
+  "normalization": "Training split only",
+  "selection": "Minimum validation BCE; temperature selected on validation only",
+  "architecture": [
+    6,
+    12,
+    1
+  ],
+  "epochs": 300,
+  "selected_epoch": 78,
+  "temperature": 1.0,
+  "pytorch": {
+    "auc_pr": 0.5861626697389488,
+    "roc_auc": 0.7809453278861961,
+    "brier": 0.1301645320587055,
+    "ece_10_bins": 0.016994580228320517,
+    "accuracy_at_0_5": 0.8266666666666667
+  },
+  "logistic_regression": {
+    "auc_pr": 0.5790049313767546,
+    "roc_auc": 0.7813074757076126,
+    "brier": 0.13146910757700647,
+    "ece_10_bins": 0.03536640688396184,
+    "accuracy_at_0_5": 0.8208333333333333
+  },
+  "versions": {
+    "torch": "2.14.1",
+    "sklearn": "1.9.1",
+    "numpy": "2.5.4"
+  }
+}

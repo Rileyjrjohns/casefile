@@ -1,0 +1,8 @@
+schema_version = 1
+min_cases = 30
+min_signal_precision = 1.0
+min_signal_recall = 1.0
+min_recommendation_accuracy = 1.0
+max_invalid_source_rate = 0.0
+max_cost_per_case = "0.05"
+max_latency_ms = 30000.0

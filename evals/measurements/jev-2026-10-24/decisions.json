@@ -1,0 +1,168 @@
+{
+  "mode": "live",
+  "dataset_sha256": "bae2cfefa4bfecdc5abbc87901e467f59af9250b1f0a833e21fb8a81cd54d6fc",
+  "passed": true,
+  "adapters": {
+    "local": {
+      "alert_type": {
+        "count": 30,
+        "accuracy": 1.0,
+        "ece": 0.0,
+        "latency_p50_ms": 0.0075410061981529,
+        "latency_p95_ms": 0.015458004781976342,
+        "cost_per_case": "0",
+        "errors": 0
+      },
+      "guard": {
+        "count": 60,
+        "accuracy": 1.0,
+        "ece": 0.0,
+        "latency_p50_ms": 0.007124996045604348,
+        "latency_p95_ms": 0.008374991011805832,
+        "cost_per_case": "0",
+        "errors": 0
+      },
+      "injection": {
+        "count": 30,
+        "accuracy": 1.0,
+        "ece": 0.0,
+        "latency_p50_ms": 0.009166004019789398,
+        "latency_p95_ms": 0.01233299553859979,
+        "cost_per_case": "0",
+        "errors": 0
+      },
+      "model_route": {
+        "count": 30,
+        "accuracy": 1.0,
+        "ece": 0.0,
+        "latency_p50_ms": 0.007333001121878624,
+        "latency_p95_ms": 0.008582996088080108,
+        "cost_per_case": "0",
+        "errors": 0
+      },
+      "priority": {
+        "count": 30,
+        "accuracy": 1.0,
+        "ece": 0.0,
+        "latency_p50_ms": 0.007542010280303657,
+        "latency_p95_ms": 0.01058299676515162,
+        "cost_per_case": "0",
+        "errors": 0
+      },
+      "recommendation": {
+        "count": 30,
+        "accuracy": 1.0,
+        "ece": 0.0,
+        "latency_p50_ms": 0.007791997632011771,
+        "latency_p95_ms": 0.009166004019789398,
+        "cost_per_case": "0",
+        "errors": 0
+      },
+      "signal": {
+        "count": 54,
+        "accuracy": 0.4444444444444444,
+        "ece": 0.3907407407407407,
+        "latency_p50_ms": 0.008540999260731041,
+        "latency_p95_ms": 0.01129199517890811,
+        "cost_per_case": "0",
+        "errors": 0
+      },
+      "tool_route": {
+        "count": 30,
+        "accuracy": 1.0,
+        "ece": 0.0,
+        "latency_p50_ms": 0.007709008059464395,
+        "latency_p95_ms": 0.009750001481734216,
+        "cost_per_case": "0",
+        "errors": 0
+      }
+    },
+    "jev": {
+      "alert_type": {
+        "count": 30,
+        "accuracy": 1.0,
+        "ece": 0.026666666666666623,
+        "latency_p50_ms": 183.79754200577736,
+        "latency_p95_ms": 301.4887090103002,
+        "cost_per_case": "0.0000350084",
+        "errors": 0
+      },
+      "guard": {
+        "count": 60,
+        "accuracy": 1.0,
+        "ece": 0.06266666666666665,
+        "latency_p50_ms": 165.5207080038963,
+        "latency_p95_ms": 248.11529100406915,
+        "cost_per_case": "0.0000685888",
+        "errors": 0
+      },
+      "injection": {
+        "count": 30,
+        "accuracy": 1.0,
+        "ece": 0.1616666666666667,
+        "latency_p50_ms": 165.0181249860907,
+        "latency_p95_ms": 247.42537501151673,
+        "cost_per_case": "0.0000472542",
+        "errors": 0
+      },
+      "model_route": {
+        "count": 30,
+        "accuracy": 0.8,
+        "ece": 0.20099999999999996,
+        "latency_p50_ms": 178.15895800595172,
+        "latency_p95_ms": 258.7732919928385,
+        "cost_per_case": "0.0000347564",
+        "errors": 0
+      },
+      "priority": {
+        "count": 30,
+        "accuracy": 0.9666666666666667,
+        "ece": 0.03599999999999999,
+        "latency_p50_ms": 171.25874999328516,
+        "latency_p95_ms": 215.56537499418482,
+        "cost_per_case": "0.0000337484",
+        "errors": 0
+      },
+      "recommendation": {
+        "count": 30,
+        "accuracy": 0.7666666666666667,
+        "ece": 0.12500000000000003,
+        "latency_p50_ms": 172.5030829984462,
+        "latency_p95_ms": 241.59583299478982,
+        "cost_per_case": "0.0000356384",
+        "errors": 0
+      },
+      "signal": {
+        "count": 54,
+        "accuracy": 1.0,
+        "ece": 0.03203703703703706,
+        "latency_p50_ms": 169.75487499439623,
+        "latency_p95_ms": 231.9078749860637,
+        "cost_per_case": "0.0000645316",
+        "errors": 0
+      },
+      "tool_route": {
+        "count": 30,
+        "accuracy": 0.23333333333333334,
+        "ece": 0.438,
+        "latency_p50_ms": 161.6902499954449,
+        "latency_p95_ms": 256.77787500899285,
+        "cost_per_case": "0.0000353444",
+        "errors": 0
+      }
+    }
+  },
+  "provenance": {
+    "local": "measured local policy; tabular risk evaluated separately",
+    "jev": "live provider"
+  },
+  "measured_at": "2026-10-24T19:44:32.522328+00:00",
+  "models": {
+    "local": [
+      "demo-policy-v1"
+    ],
+    "jev": [
+      "jev-1.14.0"
+    ]
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "case-009",
+  "category": "boundary",
+  "rationale": "Known limitation: the current rule compares each transfer individually, not their sum.",
+  "context": {
+    "subject_id": "demo-customer-009",
+    "alert_id": "golden-alert-009",
+    "kind": "unusual_transaction",
+    "description": "Cumulative volume exceeds the declaration. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-009",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-009",
+          "legal_name": "Fictional Lantern Quay Account 009",
+          "country": "FR",
+          "occupation": "Fictional demonstration trading activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-24T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-009",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-009",
+          "booked_at": "2026-10-24T09:00:00Z",
+          "amount": "3000.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Copper Orchard 001",
+          "country": "FR"
+        },
+        {
+          "record_id": "txn-002",
+          "customer_id": "demo-customer-009",
+          "booked_at": "2026-10-24T09:00:00Z",
+          "amount": "3000.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Copper Orchard 002",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-009",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-009",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Lantern Quay Account 009",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "Known limitation: the current rule compares each transfer individually, not their sum.",
+    "signals": [],
+    "recommendation": "close"
+  }
+}

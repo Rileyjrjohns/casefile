@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "case-020",
+  "category": "clear",
+  "rationale": "An alert label alone does not satisfy the current volume rule.",
+  "context": {
+    "subject_id": "demo-customer-020",
+    "alert_id": "golden-alert-020",
+    "kind": "unusual_transaction",
+    "description": "Unusual transaction alert within declared volume. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-020",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-020",
+          "legal_name": "Fictional Lantern Quay Account 020",
+          "country": "FR",
+          "occupation": "Fictional demonstration trading activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-24T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-020",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-020",
+          "booked_at": "2026-10-24T09:00:00Z",
+          "amount": "250.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Copper Orchard 001",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-020",
+      "records": [
+        {
+          "record_id": "alert-001",
+          "customer_id": "demo-customer-020",
+          "kind": "unusual_transaction",
+          "status": "open",
+          "created_at": "2026-10-24T09:00:00Z",
+          "summary": "Fictional unusual_transaction alert (open)."
+        }
+      ]
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-020",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Lantern Quay Account 020",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "An alert label alone does not satisfy the current volume rule.",
+    "signals": [],
+    "recommendation": "close"
+  }
+}

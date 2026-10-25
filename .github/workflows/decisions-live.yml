@@ -1,0 +1,64 @@
+name: Live decision comparison
+
+on:
+  workflow_dispatch:
+    inputs:
+      providers:
+        description: Adapters to measure (credentials required only for selected remote providers)
+        required: true
+        default: "local jev llm"
+        type: choice
+        options:
+          - "local jev llm"
+          - "local jev"
+          - "local llm"
+      max_cost:
+        description: Total estimated USD reservation budget
+        required: true
+        default: "1"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    environment: model-evaluations
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.26"
+      - run: uv sync --locked
+      - name: Compare providers
+        id: comparison
+        env:
+          DECISION_PROVIDERS: ${{ inputs.providers }}
+          MAX_COST: ${{ inputs.max_cost }}
+          UV_OFFLINE: "true"
+          CASEFILE_JEV_URL: ${{ vars.CASEFILE_JEV_URL }}
+          CASEFILE_JEV_MODEL: ${{ vars.CASEFILE_JEV_MODEL }}
+          CASEFILE_JEV_API_KEY: ${{ secrets.CASEFILE_JEV_API_KEY }}
+          CASEFILE_JEV_INPUT_COST_PER_MILLION: ${{ vars.CASEFILE_JEV_INPUT_COST_PER_MILLION }}
+          CASEFILE_JEV_OUTPUT_COST_PER_MILLION: ${{ vars.CASEFILE_JEV_OUTPUT_COST_PER_MILLION }}
+          CASEFILE_LLM_URL: ${{ vars.CASEFILE_LLM_URL }}
+          CASEFILE_LLM_MODEL: ${{ vars.CASEFILE_LLM_MODEL }}
+          CASEFILE_LLM_API_KEY: ${{ secrets.CASEFILE_LLM_API_KEY }}
+          CASEFILE_LLM_INPUT_COST_PER_MILLION: ${{ vars.CASEFILE_LLM_INPUT_COST_PER_MILLION }}
+          CASEFILE_LLM_OUTPUT_COST_PER_MILLION: ${{ vars.CASEFILE_LLM_OUTPUT_COST_PER_MILLION }}
+        run: |
+          read -r -a providers <<< "$DECISION_PROVIDERS"
+          uv run --locked casefile-decisions --live --providers "${providers[@]}" --max-cost "$MAX_COST"
+      - name: Publish comparison
+        if: ${{ always() && (steps.comparison.outcome == 'success' || steps.comparison.outcome == 'failure') }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: live-decision-comparison-${{ github.sha }}
+          path: build/evals/*
+          if-no-files-found: warn
+          retention-days: 14

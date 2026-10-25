@@ -1,0 +1,51 @@
+name: Live model evaluations
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: live-model-evaluations
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    name: Evaluate configured narrative model
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: model-evaluations
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.26"
+          enable-cache: true
+      - name: Install Python from .python-version
+        run: uv python install
+      - name: Install locked dependencies
+        run: make sync
+      - name: Run live narrative evaluations with recorded tools
+        id: evals
+        env:
+          UV_OFFLINE: "true"
+          CASEFILE_MODEL_URL: ${{ vars.CASEFILE_MODEL_URL }}
+          CASEFILE_MODEL_NAME: ${{ vars.CASEFILE_MODEL_NAME }}
+          CASEFILE_MODEL_API_KEY: ${{ secrets.CASEFILE_MODEL_API_KEY }}
+          CASEFILE_MODEL_INPUT_COST_PER_MILLION: ${{ vars.CASEFILE_MODEL_INPUT_COST_PER_MILLION }}
+          CASEFILE_MODEL_OUTPUT_COST_PER_MILLION: ${{ vars.CASEFILE_MODEL_OUTPUT_COST_PER_MILLION }}
+          CASEFILE_MODEL_TIMEOUT_SECONDS: ${{ vars.CASEFILE_MODEL_TIMEOUT_SECONDS || '10' }}
+        run: make eval EVAL_MODE=http EVAL_OUTPUT=build/evals-live
+      - name: Publish live evaluation reports, including failed cases
+        if: ${{ always() && (steps.evals.outcome == 'success' || steps.evals.outcome == 'failure') }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: live-evaluations-${{ github.sha }}-${{ github.run_attempt }}
+          path: build/evals-live/report.*
+          if-no-files-found: error
+          retention-days: 14

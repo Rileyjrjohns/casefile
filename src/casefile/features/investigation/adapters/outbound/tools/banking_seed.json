@@ -1,0 +1,573 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "transactions": [
+    {
+      "record_id": "txn-101",
+      "customer_id": "demo-customer-101",
+      "booked_at": "2026-08-12T10:00:00Z",
+      "amount": "7750.00",
+      "currency": "EUR",
+      "counterparty": "Demo Alder Components",
+      "country": "FR"
+    },
+    {
+      "record_id": "txn-102",
+      "customer_id": "demo-customer-101",
+      "booked_at": "2026-09-10T10:00:00Z",
+      "amount": "16600.00",
+      "currency": "EUR",
+      "counterparty": "Demo Alder Components",
+      "country": "FR"
+    },
+    {
+      "record_id": "txn-103",
+      "customer_id": "demo-customer-101",
+      "booked_at": "2026-10-02T10:00:00Z",
+      "amount": "18800.00",
+      "currency": "EUR",
+      "counterparty": "Demo Alder Components",
+      "country": "FR"
+    },
+    {
+      "record_id": "txn-104",
+      "customer_id": "demo-customer-101",
+      "booked_at": "2026-10-21T10:00:00Z",
+      "amount": "18450.00",
+      "currency": "EUR",
+      "counterparty": "Demo Alder Components",
+      "country": "FR"
+    }
+  ],
+  "kyc": [
+    {
+      "record_id": "kyc-101",
+      "customer_id": "demo-customer-101",
+      "legal_name": "Demo Juniper Engineering",
+      "country": "FR",
+      "occupation": "Fictional equipment manufacturer",
+      "expected_monthly_volume": "25000.00",
+      "reviewed_at": "2026-10-01T09:00:00Z"
+    },
+    {
+      "record_id": "kyc-102",
+      "customer_id": "demo-customer-102",
+      "legal_name": "Demo Camille Renaud",
+      "country": "FR",
+      "occupation": "Fictional employee of Demo Meridian Services",
+      "expected_monthly_volume": "5000.00",
+      "reviewed_at": "2026-10-01T09:00:00Z"
+    },
+    {
+      "record_id": "kyc-103",
+      "customer_id": "demo-customer-103",
+      "legal_name": "Demo Alex Marin",
+      "country": "FR",
+      "occupation": "Fictional resident and retail customer",
+      "expected_monthly_volume": "5000.00",
+      "reviewed_at": "2026-10-01T09:00:00Z"
+    }
+  ],
+  "alerts": [
+    {
+      "record_id": "alert-101",
+      "customer_id": "demo-customer-101",
+      "kind": "unusual_transaction",
+      "status": "open",
+      "created_at": "2026-10-22T09:00:00Z",
+      "summary": "A supplier payment uses newly supplied bank coordinates; the invoice and original vendor file disagree."
+    },
+    {
+      "record_id": "alert-102",
+      "customer_id": "demo-customer-102",
+      "kind": "document_mismatch",
+      "status": "open",
+      "created_at": "2026-10-22T09:00:00Z",
+      "summary": "Declared and payslip income differ from three salary credits and an independent employer reply."
+    },
+    {
+      "record_id": "alert-103",
+      "customer_id": "demo-customer-103",
+      "kind": "sanctions_match",
+      "status": "open",
+      "created_at": "2026-10-22T09:00:00Z",
+      "summary": "Name-only screening matches a fictional list entry; birth date and identity records need comparison."
+    }
+  ],
+  "sanctions": [
+    {
+      "record_id": "sanction-103",
+      "name": "Demo Alex Marin",
+      "aliases": [
+        "Demo A Marin"
+      ],
+      "program": "FICTIONAL-IDENTITY-REVIEW-LIST",
+      "listed_at": "2026-09-01"
+    }
+  ],
+  "notes": [
+    {
+      "record_id": "note-101",
+      "customer_id": "demo-customer-101",
+      "author": "Demo Case Operations",
+      "text": "A payment close to this amount occurred earlier in October. A familiar amount does not establish that new bank coordinates are legitimate.",
+      "created_at": "2026-10-22T10:00:00Z"
+    },
+    {
+      "record_id": "note-102",
+      "customer_id": "demo-customer-102",
+      "author": "Demo Case Operations",
+      "text": "The applicant attributes the difference to bonuses. The claim is unverified; compare the independent employer response and salary credits before drawing a conclusion.",
+      "created_at": "2026-10-22T10:00:00Z"
+    },
+    {
+      "record_id": "note-103",
+      "customer_id": "demo-customer-103",
+      "author": "Demo Case Operations",
+      "text": "A name match is a screening lead. Compare the identity document, independent registry check and the fictional list biography; do not infer a match from the name alone.",
+      "created_at": "2026-10-22T10:00:00Z"
+    }
+  ],
+  "documents": [
+    {
+      "record_id": "doc-101",
+      "customer_id": "demo-customer-101",
+      "kind": "purchase_order",
+      "title": "Approved equipment order",
+      "issuer": "Demo Juniper procurement",
+      "issued_at": "2026-10-21T09:00:00Z",
+      "verification": "independent",
+      "fields": [
+        {
+          "name": "purchase_order_ref",
+          "value": "DEMO-PO-2026-84"
+        },
+        {
+          "name": "amount",
+          "value": "18450.00"
+        },
+        {
+          "name": "currency",
+          "value": "EUR"
+        }
+      ],
+      "text": "An approved order for replacement machine components; the amount is consistent with a genuine business purchase."
+    },
+    {
+      "record_id": "doc-102",
+      "customer_id": "demo-customer-101",
+      "kind": "invoice",
+      "title": "Supplier invoice retained in vendor records",
+      "issuer": "Demo Alder Components",
+      "issued_at": "2026-10-21T09:00:00Z",
+      "verification": "independent",
+      "fields": [
+        {
+          "name": "invoice_ref",
+          "value": "DEMO-INV-2026-410"
+        },
+        {
+          "name": "purchase_order_ref",
+          "value": "DEMO-PO-2026-84"
+        },
+        {
+          "name": "amount",
+          "value": "18450.00"
+        },
+        {
+          "name": "currency",
+          "value": "EUR"
+        },
+        {
+          "name": "beneficiary_account",
+          "value": "DEMO-ACCOUNT-ALDER-OLD"
+        }
+      ],
+      "text": "The original invoice and vendor file identify the established supplier account. Account identifiers are fictional tokens, not usable bank coordinates."
+    },
+    {
+      "record_id": "doc-103",
+      "customer_id": "demo-customer-101",
+      "kind": "payment_instruction",
+      "title": "Email requesting changed bank coordinates",
+      "issuer": "Unverified supplier email",
+      "issued_at": "2026-10-21T09:00:00Z",
+      "verification": "unverified",
+      "fields": [
+        {
+          "name": "invoice_ref",
+          "value": "DEMO-INV-2026-410"
+        },
+        {
+          "name": "amount",
+          "value": "18450.00"
+        },
+        {
+          "name": "currency",
+          "value": "EUR"
+        },
+        {
+          "name": "beneficiary_account",
+          "value": "DEMO-ACCOUNT-ALDER-NEW"
+        },
+        {
+          "name": "received_via",
+          "value": "Email from a look-alike fictional domain"
+        }
+      ],
+      "text": "The email asks for urgent payment to a new account. The signature and invoice reference look familiar; neither authenticates the sender."
+    },
+    {
+      "record_id": "doc-104",
+      "customer_id": "demo-customer-101",
+      "kind": "supplier_confirmation",
+      "title": "Callback using the existing vendor directory",
+      "issuer": "Demo Alder treasury contact",
+      "issued_at": "2026-10-21T09:00:00Z",
+      "verification": "independent",
+      "fields": [
+        {
+          "name": "invoice_ref",
+          "value": "DEMO-INV-2026-410"
+        },
+        {
+          "name": "beneficiary_account",
+          "value": "DEMO-ACCOUNT-ALDER-OLD"
+        },
+        {
+          "name": "change_authorized",
+          "value": "no"
+        },
+        {
+          "name": "contact_channel",
+          "value": "Known vendor-directory phone number"
+        }
+      ],
+      "text": "The supplier confirms the invoice but denies requesting new bank coordinates. This is a fictional callback record, not a live contact."
+    },
+    {
+      "record_id": "doc-201",
+      "customer_id": "demo-customer-102",
+      "kind": "credit_application",
+      "title": "Personal-credit application and declared income",
+      "issuer": "Demo applicant submission",
+      "issued_at": "2026-10-21T09:00:00Z",
+      "verification": "unverified",
+      "fields": [
+        {
+          "name": "requested_amount",
+          "value": "20000.00"
+        },
+        {
+          "name": "currency",
+          "value": "EUR"
+        },
+        {
+          "name": "declared_monthly_income",
+          "value": "4200.00"
+        },
+        {
+          "name": "employer_ref",
+          "value": "DEMO-EMPLOYER-MERIDIAN"
+        }
+      ],
+      "text": "The application declares recurring net monthly income of EUR 4,200. This dossier investigates documentary consistency; it does not assess loan eligibility."
+    },
+    {
+      "record_id": "doc-202",
+      "customer_id": "demo-customer-102",
+      "kind": "payslip",
+      "title": "Submitted payslip — 2026-07",
+      "issuer": "Demo applicant attachment",
+      "issued_at": "2026-07-28T09:00:00Z",
+      "verification": "unverified",
+      "fields": [
+        {
+          "name": "month",
+          "value": "2026-07"
+        },
+        {
+          "name": "net_pay",
+          "value": "4200.00"
+        },
+        {
+          "name": "currency",
+          "value": "EUR"
+        },
+        {
+          "name": "employer_ref",
+          "value": "DEMO-EMPLOYER-MERIDIAN"
+        }
+      ],
+      "text": "The submitted payslip states net pay of EUR 4,200; its contents are evidence to verify."
+    },
+    {
+      "record_id": "doc-205",
+      "customer_id": "demo-customer-102",
+      "kind": "bank_statement",
+      "title": "Bank salary-credit extract — 2026-07",
+      "issuer": "Demo account ledger",
+      "issued_at": "2026-07-28T09:00:00Z",
+      "verification": "independent",
+      "fields": [
+        {
+          "name": "month",
+          "value": "2026-07"
+        },
+        {
+          "name": "salary_credit",
+          "value": "2600.00"
+        },
+        {
+          "name": "currency",
+          "value": "EUR"
+        },
+        {
+          "name": "employer_ref",
+          "value": "DEMO-EMPLOYER-MERIDIAN"
+        }
+      ],
+      "text": "The ledger identifies a EUR 2,600 salary credit from the stated employer. Only the salary credit is compared; unrelated transfers are not treated as income."
+    },
+    {
+      "record_id": "doc-203",
+      "customer_id": "demo-customer-102",
+      "kind": "payslip",
+      "title": "Submitted payslip — 2026-08",
+      "issuer": "Demo applicant attachment",
+      "issued_at": "2026-08-28T09:00:00Z",
+      "verification": "unverified",
+      "fields": [
+        {
+          "name": "month",
+          "value": "2026-08"
+        },
+        {
+          "name": "net_pay",
+          "value": "4200.00"
+        },
+        {
+          "name": "currency",
+          "value": "EUR"
+        },
+        {
+          "name": "employer_ref",
+          "value": "DEMO-EMPLOYER-MERIDIAN"
+        }
+      ],
+      "text": "The submitted payslip states net pay of EUR 4,200; its contents are evidence to verify."
+    },
+    {
+      "record_id": "doc-206",
+      "customer_id": "demo-customer-102",
+      "kind": "bank_statement",
+      "title": "Bank salary-credit extract — 2026-08",
+      "issuer": "Demo account ledger",
+      "issued_at": "2026-08-28T09:00:00Z",
+      "verification": "independent",
+      "fields": [
+        {
+          "name": "month",
+          "value": "2026-08"
+        },
+        {
+          "name": "salary_credit",
+          "value": "2600.00"
+        },
+        {
+          "name": "currency",
+          "value": "EUR"
+        },
+        {
+          "name": "employer_ref",
+          "value": "DEMO-EMPLOYER-MERIDIAN"
+        }
+      ],
+      "text": "The ledger identifies a EUR 2,600 salary credit from the stated employer. Only the salary credit is compared; unrelated transfers are not treated as income."
+    },
+    {
+      "record_id": "doc-204",
+      "customer_id": "demo-customer-102",
+      "kind": "payslip",
+      "title": "Submitted payslip — 2026-09",
+      "issuer": "Demo applicant attachment",
+      "issued_at": "2026-09-28T09:00:00Z",
+      "verification": "unverified",
+      "fields": [
+        {
+          "name": "month",
+          "value": "2026-09"
+        },
+        {
+          "name": "net_pay",
+          "value": "4200.00"
+        },
+        {
+          "name": "currency",
+          "value": "EUR"
+        },
+        {
+          "name": "employer_ref",
+          "value": "DEMO-EMPLOYER-MERIDIAN"
+        }
+      ],
+      "text": "The submitted payslip states net pay of EUR 4,200; its contents are evidence to verify."
+    },
+    {
+      "record_id": "doc-207",
+      "customer_id": "demo-customer-102",
+      "kind": "bank_statement",
+      "title": "Bank salary-credit extract — 2026-09",
+      "issuer": "Demo account ledger",
+      "issued_at": "2026-09-28T09:00:00Z",
+      "verification": "independent",
+      "fields": [
+        {
+          "name": "month",
+          "value": "2026-09"
+        },
+        {
+          "name": "salary_credit",
+          "value": "2600.00"
+        },
+        {
+          "name": "currency",
+          "value": "EUR"
+        },
+        {
+          "name": "employer_ref",
+          "value": "DEMO-EMPLOYER-MERIDIAN"
+        }
+      ],
+      "text": "The ledger identifies a EUR 2,600 salary credit from the stated employer. Only the salary credit is compared; unrelated transfers are not treated as income."
+    },
+    {
+      "record_id": "doc-208",
+      "customer_id": "demo-customer-102",
+      "kind": "employment_confirmation",
+      "title": "Employer response through a verified contact",
+      "issuer": "Demo Meridian payroll office",
+      "issued_at": "2026-10-21T09:00:00Z",
+      "verification": "independent",
+      "fields": [
+        {
+          "name": "monthly_net_pay",
+          "value": "2600.00"
+        },
+        {
+          "name": "currency",
+          "value": "EUR"
+        },
+        {
+          "name": "employer_ref",
+          "value": "DEMO-EMPLOYER-MERIDIAN"
+        },
+        {
+          "name": "recurring_bonus",
+          "value": "0.00"
+        }
+      ],
+      "text": "Payroll confirms EUR 2,600 recurring monthly net pay and no recurring bonus. A separate expense reimbursement is not recurring salary."
+    },
+    {
+      "record_id": "doc-209",
+      "customer_id": "demo-customer-102",
+      "kind": "customer_explanation",
+      "title": "Applicant explanation of additional credits",
+      "issuer": "Demo applicant",
+      "issued_at": "2026-10-21T09:00:00Z",
+      "verification": "unverified",
+      "fields": [
+        {
+          "name": "explanation",
+          "value": "Variable bonuses and reimbursements"
+        }
+      ],
+      "text": "The applicant says additional credits explain the difference. This explanation has not been independently substantiated and is not a finding of fraud."
+    },
+    {
+      "record_id": "doc-301",
+      "customer_id": "demo-customer-103",
+      "kind": "identity_record",
+      "title": "Customer identity document",
+      "issuer": "Demo identity verification desk",
+      "issued_at": "2026-10-21T09:00:00Z",
+      "verification": "independent",
+      "fields": [
+        {
+          "name": "legal_name",
+          "value": "Demo Alex Marin"
+        },
+        {
+          "name": "date_of_birth",
+          "value": "1988-04-12"
+        },
+        {
+          "name": "country",
+          "value": "FR"
+        },
+        {
+          "name": "document_ref",
+          "value": "DEMO-ID-1988-103"
+        }
+      ],
+      "text": "The fictional identity check records the customer birth date and country; no real identity document is stored."
+    },
+    {
+      "record_id": "doc-302",
+      "customer_id": "demo-customer-103",
+      "kind": "watchlist_identity",
+      "title": "Biography attached to the fictional screening entry",
+      "issuer": "Fictional screening provider",
+      "issued_at": "2026-10-21T09:00:00Z",
+      "verification": "independent",
+      "fields": [
+        {
+          "name": "sanction_record_id",
+          "value": "sanction-103"
+        },
+        {
+          "name": "legal_name",
+          "value": "Demo Alex Marin"
+        },
+        {
+          "name": "date_of_birth",
+          "value": "1964-11-03"
+        },
+        {
+          "name": "country",
+          "value": "XZ"
+        }
+      ],
+      "text": "The name is identical, but the listed biography describes a different birth date and country. This is not an official sanctions list."
+    },
+    {
+      "record_id": "doc-303",
+      "customer_id": "demo-customer-103",
+      "kind": "registry_confirmation",
+      "title": "Independent identity-record cross-check",
+      "issuer": "Demo civil registry simulator",
+      "issued_at": "2026-10-21T09:00:00Z",
+      "verification": "independent",
+      "fields": [
+        {
+          "name": "legal_name",
+          "value": "Demo Alex Marin"
+        },
+        {
+          "name": "date_of_birth",
+          "value": "1988-04-12"
+        },
+        {
+          "name": "country",
+          "value": "FR"
+        },
+        {
+          "name": "document_ref",
+          "value": "DEMO-ID-1988-103"
+        }
+      ],
+      "text": "The independent fictional registry confirms the customer identity details. Human review must decide whether the name-only alert can be closed."
+    }
+  ]
+}

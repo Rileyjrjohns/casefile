@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "case-027",
+  "category": "missing_data",
+  "rationale": "An explicit mismatch signal takes precedence over the missing baseline.",
+  "context": {
+    "subject_id": "demo-customer-027",
+    "alert_id": "golden-alert-027",
+    "kind": "kyc_inconsistency",
+    "description": "Missing KYC with an unresolved mismatch. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-027",
+      "records": []
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-027",
+      "records": []
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-027",
+      "records": [
+        {
+          "record_id": "alert-001",
+          "customer_id": "demo-customer-027",
+          "kind": "kyc_mismatch",
+          "status": "open",
+          "created_at": "2026-10-24T09:00:00Z",
+          "summary": "Fictional kyc_mismatch alert (open)."
+        }
+      ]
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-027",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "An explicit mismatch signal takes precedence over the missing baseline.",
+    "signals": [
+      {
+        "key": "kyc:alert-001",
+        "statement": "An open alert reports inconsistent KYC information.",
+        "confidence": 0.7,
+        "sources": [
+          {
+            "tool": "list_alerts",
+            "record_id": "alert-001"
+          }
+        ]
+      }
+    ],
+    "recommendation": "escalate"
+  }
+}

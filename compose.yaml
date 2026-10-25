@@ -1,0 +1,62 @@
+name: casefile
+services:
+  postgres:
+    image: postgres:18-alpine@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
+    environment:
+      POSTGRES_DB: casefile
+      POSTGRES_USER: casefile
+      POSTGRES_PASSWORD: casefile-local-demo
+    volumes:
+      - casefile-postgres:/var/lib/postgresql
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U casefile -d casefile"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  migrate:
+    build: .
+    environment:
+      CASEFILE_DATABASE_URL: postgresql+psycopg://casefile:casefile-local-demo@postgres:5432/casefile
+    command: [/app/.venv/bin/alembic, upgrade, head]
+    depends_on:
+      postgres:
+        condition: service_healthy
+  api:
+    build: .
+    environment:
+      CASEFILE_DATABASE_URL: postgresql+psycopg://casefile:casefile-local-demo@postgres:5432/casefile
+      CASEFILE_TOOLS: mcp
+      CASEFILE_LANGUAGE_MODEL: fake
+      CASEFILE_DECISIONS: "${CASEFILE_DECISIONS:-}"
+      CASEFILE_JEV_URL: "${CASEFILE_JEV_URL:-https://api.typesafe.ai/v1/systemone}"
+      CASEFILE_JEV_MODEL: "${CASEFILE_JEV_MODEL:-jev-latest}"
+      CASEFILE_JEV_API_KEY: "${CASEFILE_JEV_API_KEY:-}"
+      CASEFILE_JEV_INPUT_COST_PER_MILLION: "${CASEFILE_JEV_INPUT_COST_PER_MILLION:-}"
+      CASEFILE_JEV_OUTPUT_COST_PER_MILLION: "${CASEFILE_JEV_OUTPUT_COST_PER_MILLION:-}"
+      CASEFILE_LLM_URL: "${CASEFILE_LLM_URL:-}"
+      CASEFILE_LLM_MODEL: "${CASEFILE_LLM_MODEL:-}"
+      CASEFILE_LLM_API_KEY: "${CASEFILE_LLM_API_KEY:-}"
+      CASEFILE_LLM_INPUT_COST_PER_MILLION: "${CASEFILE_LLM_INPUT_COST_PER_MILLION:-}"
+      CASEFILE_LLM_OUTPUT_COST_PER_MILLION: "${CASEFILE_LLM_OUTPUT_COST_PER_MILLION:-}"
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, /app/.venv/bin/python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    security_opt: [no-new-privileges:true]
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  casefile-postgres:

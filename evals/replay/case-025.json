@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "provenance": "synthetic-fixture",
+  "request": {
+    "context": {
+      "subject_id": "demo-customer-025",
+      "alert_id": "golden-alert-025",
+      "kind": "kyc_inconsistency",
+      "description": "No customer evidence returned. Entirely fictional evaluation case."
+    },
+    "evidence": [
+      {
+        "tool": "get_kyc_profile",
+        "query": "demo-customer-025",
+        "records": []
+      },
+      {
+        "tool": "list_transactions",
+        "query": "demo-customer-025",
+        "records": []
+      },
+      {
+        "tool": "list_alerts",
+        "query": "demo-customer-025",
+        "records": []
+      },
+      {
+        "tool": "list_investigator_notes",
+        "query": "demo-customer-025",
+        "records": []
+      }
+    ],
+    "signals": [],
+    "max_output_tokens": 1024,
+    "prompt_version": "casefile-narrative-v1"
+  },
+  "response": {
+    "model": "synthetic-narrative-v1",
+    "summary": "No customer evidence returned. Missing KYC without any signals requires more information. Human review is required.",
+    "statements": [],
+    "input_tokens": 128,
+    "output_tokens": 64,
+    "estimated_cost": "0"
+  },
+  "reservation": {
+    "tool_calls": 0,
+    "tokens": 1536,
+    "estimated_cost": "0"
+  }
+}
