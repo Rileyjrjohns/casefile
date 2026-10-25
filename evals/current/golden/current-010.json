@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "current-010",
+  "category": "monthly_volume",
+  "rationale": "Neither transfer is strictly above 5000.00 (the first equals it), so there is no individual finding. Together they total 5000.01 in October, so the monthly finding applies and cites both. Escalate.",
+  "context": {
+    "subject_id": "demo-customer-210",
+    "alert_id": "current-alert-010",
+    "kind": "unusual_transaction",
+    "description": "A transfer at the declared volume followed by one cent. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-210",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-210",
+          "legal_name": "Fictional Harbor Mill 210",
+          "country": "FR",
+          "occupation": "Fictional demonstration activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-210",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-210",
+          "booked_at": "2026-10-05T10:00:00Z",
+          "amount": "5000.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        },
+        {
+          "record_id": "txn-002",
+          "customer_id": "demo-customer-210",
+          "booked_at": "2026-10-06T10:00:00Z",
+          "amount": "0.01",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-210",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-210",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Harbor Mill 210",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "A transfer exactly at the declaration plus one cent exceeds it cumulatively.",
+    "signals": [
+      {
+        "key": "monthly_volume:2026-10:EUR",
+        "statement": "Observed EUR transfers in 2026-10 total 5000.01, exceeding the declared monthly volume of EUR 5000.00. This compares the returned snapshot, not a verified complete monthly statement.",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "get_kyc_profile",
+            "record_id": "kyc-001"
+          },
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-001"
+          },
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-002"
+          }
+        ]
+      }
+    ],
+    "recommendation": "escalate"
+  }
+}

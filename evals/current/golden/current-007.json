@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "current-007",
+  "category": "monthly_volume",
+  "rationale": "Both transfers carry October 1 local timestamps, but ADR 019 groups by UTC calendar month. 2026-10-01T01:00+02:00 is 2026-09-30T23:00Z (September) and 03:00+02:00 is 01:00Z on October 1. Each month holds one 3000.00 transfer, under the 5000.00 declaration. No signal; close.",
+  "context": {
+    "subject_id": "demo-customer-207",
+    "alert_id": "current-alert-007",
+    "kind": "unusual_transaction",
+    "description": "Transfers around a month end with a local offset. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-207",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-207",
+          "legal_name": "Fictional Harbor Mill 207",
+          "country": "FR",
+          "occupation": "Fictional demonstration activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-207",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-207",
+          "booked_at": "2026-10-01T01:00:00+02:00",
+          "amount": "3000.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        },
+        {
+          "record_id": "txn-002",
+          "customer_id": "demo-customer-207",
+          "booked_at": "2026-10-01T03:00:00+02:00",
+          "amount": "3000.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-207",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-207",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Harbor Mill 207",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "The UTC calendar month, not the local date, decides the grouping.",
+    "signals": [],
+    "recommendation": "close"
+  }
+}

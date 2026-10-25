@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "current-002",
+  "category": "monthly_volume",
+  "rationale": "The October total equals the declared volume exactly (5000.00). The documented rule needs the total to exceed the declaration, so equality is within the baseline: no signal. With a KYC profile and no gap, closing is allowed.",
+  "context": {
+    "subject_id": "demo-customer-202",
+    "alert_id": "current-alert-002",
+    "kind": "unusual_transaction",
+    "description": "Two transfers totalling the declared volume. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-202",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-202",
+          "legal_name": "Fictional Harbor Mill 202",
+          "country": "FR",
+          "occupation": "Fictional demonstration activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-202",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-202",
+          "booked_at": "2026-10-05T10:00:00Z",
+          "amount": "2500.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        },
+        {
+          "record_id": "txn-002",
+          "customer_id": "demo-customer-202",
+          "booked_at": "2026-10-12T10:00:00Z",
+          "amount": "2500.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-202",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-202",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Harbor Mill 202",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "Cumulative volume equal to the declaration is not a concern.",
+    "signals": [],
+    "recommendation": "close"
+  }
+}

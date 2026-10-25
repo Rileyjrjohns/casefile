@@ -8,6 +8,7 @@ import tomllib
 from decimal import Decimal
 from pathlib import Path
 
+import httpx
 import pytest
 
 from casefile.bootstrap.evaluation_fixtures import drifted
@@ -20,6 +21,11 @@ from casefile.bootstrap.evaluations import (
 )
 from casefile.features.evaluation.adapters.outbound.golden import load_suite, load_thresholds
 from casefile.features.evaluation.application.benchmark import BenchmarkCase
+from casefile.features.investigation.adapters.outbound.agent.codec import AgentJsonCodec
+from casefile.features.investigation.adapters.outbound.agent.http_model import (
+    HttpLanguageModel,
+    ModelSettings,
+)
 from casefile.features.investigation.application.findings_policy import (
     CURRENT_FINDINGS,
     LEGACY_FINDINGS,
@@ -286,3 +292,40 @@ def test_the_case_index_lists_every_case_of_both_suites() -> None:
         assert f"[{case.id}]" in index, case.id
     assert "pending independent human review" in index
     assert "findings-v1 regression profile" in index and "current-policy profile" in index
+
+
+@pytest.mark.asyncio
+async def test_live_narrative_mode_evaluates_the_current_suite_with_replayed_tools(
+    tmp_path: Path,
+) -> None:
+    calls = 0
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        narrative = json.loads(json.loads(request.content)["messages"][1]["content"])
+        statements = [
+            {"key": s["key"], "text": s["statement"], "sources": s["sources"]}
+            for s in narrative["signals"]
+        ]
+        reply = {"summary": "Fictional evidence requires human review.", "statements": statements}
+        return httpx.Response(
+            200,
+            json={
+                "model": "simulated-http-v1",
+                "choices": [{"finish_reason": "stop", "message": {"content": json.dumps(reply)}}],
+                "usage": {"prompt_tokens": 100, "completion_tokens": 20, "total_tokens": 120},
+            },
+        )
+
+    settings = ModelSettings(
+        "https://model.example/chat/completions", "simulated-http-v1", "k", Decimal(1), Decimal(2)
+    )
+    async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+        report = await run_evaluations(
+            CURRENT,
+            tmp_path,
+            profile=CURRENT_PROFILE,
+            model=HttpLanguageModel(client, settings, AgentJsonCodec()),
+        )
+    assert calls == len(SUITE) and report.mode == "http" and report.passed, report.violations

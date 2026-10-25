@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "current-037",
+  "category": "payment",
+  "rationale": "Invoice and order agree at EUR 12600.00 but the instruction asks for EUR 21600.00, a digit transposition. The account is unchanged, so only the amount is in question: a payment-amount finding and the unchanged-account context. Escalate.",
+  "context": {
+    "subject_id": "demo-customer-237",
+    "alert_id": "current-alert-037",
+    "kind": "payment_fraud",
+    "description": "Supplier payment whose instructed amount differs. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-237",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-237",
+          "legal_name": "Demo Larch Engineering 237",
+          "country": "FR",
+          "occupation": "Fictional demonstration activity",
+          "expected_monthly_volume": "25000.00",
+          "reviewed_at": "2026-10-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-237",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-237",
+          "booked_at": "2026-09-10T10:00:00Z",
+          "amount": "6400.00",
+          "currency": "EUR",
+          "counterparty": "Demo Supplier",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-237",
+      "records": [
+        {
+          "record_id": "alert-001",
+          "customer_id": "demo-customer-237",
+          "kind": "unusual_transaction",
+          "status": "open",
+          "created_at": "2026-10-20T09:00:00Z",
+          "summary": "Supplier payment awaiting document comparison."
+        }
+      ]
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-237",
+      "records": []
+    },
+    {
+      "tool": "list_case_documents",
+      "query": "demo-customer-237",
+      "records": [
+        {
+          "record_id": "doc-001",
+          "customer_id": "demo-customer-237",
+          "kind": "invoice",
+          "title": "Supplier invoice retained in vendor records",
+          "issuer": "Demo Supplier Records",
+          "issued_at": "2026-10-15T09:00:00Z",
+          "verification": "independent",
+          "fields": [
+            {
+              "name": "invoice_ref",
+              "value": "DEMO-INV-2026-537"
+            },
+            {
+              "name": "purchase_order_ref",
+              "value": "DEMO-PO-2026-537"
+            },
+            {
+              "name": "amount",
+              "value": "12600.00"
+            },
+            {
+              "name": "currency",
+              "value": "EUR"
+            },
+            {
+              "name": "beneficiary_account",
+              "value": "DEMO-ACCOUNT-SUPPLIER-A"
+            }
+          ],
+          "text": "Original invoice from the vendor file. Account identifiers are fictional tokens."
+        },
+        {
+          "record_id": "doc-002",
+          "customer_id": "demo-customer-237",
+          "kind": "purchase_order",
+          "title": "Approved purchase order",
+          "issuer": "Demo Procurement Desk",
+          "issued_at": "2026-10-15T09:00:00Z",
+          "verification": "independent",
+          "fields": [
+            {
+              "name": "purchase_order_ref",
+              "value": "DEMO-PO-2026-537"
+            },
+            {
+              "name": "amount",
+              "value": "12600.00"
+            },
+            {
+              "name": "currency",
+              "value": "EUR"
+            }
+          ],
+          "text": "Approved order for fictional equipment."
+        },
+        {
+          "record_id": "doc-003",
+          "customer_id": "demo-customer-237",
+          "kind": "payment_instruction",
+          "title": "Payment instruction received",
+          "issuer": "Supplier email",
+          "issued_at": "2026-10-15T09:00:00Z",
+          "verification": "unverified",
+          "fields": [
+            {
+              "name": "invoice_ref",
+              "value": "DEMO-INV-2026-537"
+            },
+            {
+              "name": "amount",
+              "value": "21600.00"
+            },
+            {
+              "name": "currency",
+              "value": "EUR"
+            },
+            {
+              "name": "beneficiary_account",
+              "value": "DEMO-ACCOUNT-SUPPLIER-A"
+            },
+            {
+              "name": "received_via",
+              "value": "Email"
+            }
+          ],
+          "text": "Payment request for the referenced invoice."
+        },
+        {
+          "record_id": "doc-004",
+          "customer_id": "demo-customer-237",
+          "kind": "supplier_confirmation",
+          "title": "Callback using the vendor directory",
+          "issuer": "Demo supplier treasury contact",
+          "issued_at": "2026-10-15T09:00:00Z",
+          "verification": "independent",
+          "fields": [
+            {
+              "name": "invoice_ref",
+              "value": "DEMO-INV-2026-537"
+            },
+            {
+              "name": "beneficiary_account",
+              "value": "DEMO-ACCOUNT-SUPPLIER-A"
+            },
+            {
+              "name": "change_authorized",
+              "value": "no"
+            },
+            {
+              "name": "contact_channel",
+              "value": "Known directory number"
+            }
+          ],
+          "text": "Recorded supplier callback for the invoice."
+        }
+      ]
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Demo Larch Engineering 237",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "The instructed amount differs from the invoice and order.",
+    "signals": [
+      {
+        "key": "finding:payment_amount",
+        "statement": "The payment, original invoice and approved order show different amounts; verify the discrepancy before accepting the payment explanation.",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "list_case_documents",
+            "record_id": "doc-001"
+          },
+          {
+            "tool": "list_case_documents",
+            "record_id": "doc-002"
+          },
+          {
+            "tool": "list_case_documents",
+            "record_id": "doc-003"
+          }
+        ]
+      },
+      {
+        "key": "context:unchanged_account",
+        "statement": "The instructed beneficiary account matches the original invoice.",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "list_case_documents",
+            "record_id": "doc-003"
+          },
+          {
+            "tool": "list_case_documents",
+            "record_id": "doc-001"
+          }
+        ]
+      }
+    ],
+    "recommendation": "escalate"
+  }
+}

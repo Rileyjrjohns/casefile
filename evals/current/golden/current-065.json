@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "current-065",
+  "category": "mixed",
+  "rationale": "A declared volume of 0.00 means any positive EUR transfer exceeds it individually, so each transfer is its own volume finding. Because individual findings exist, the monthly finding is not duplicated. Two volume signals; escalate.",
+  "context": {
+    "subject_id": "demo-customer-265",
+    "alert_id": "current-alert-065",
+    "kind": "unusual_transaction",
+    "description": "Zero declared volume with two cent-sized transfers. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-265",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-265",
+          "legal_name": "Fictional Gull Pier 265",
+          "country": "FR",
+          "occupation": "Fictional demonstration activity",
+          "expected_monthly_volume": "0.00",
+          "reviewed_at": "2026-10-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-265",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-265",
+          "booked_at": "2026-10-05T10:00:00Z",
+          "amount": "0.01",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        },
+        {
+          "record_id": "txn-002",
+          "customer_id": "demo-customer-265",
+          "booked_at": "2026-10-06T10:00:00Z",
+          "amount": "0.01",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-265",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-265",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Gull Pier 265",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "Any positive transfer exceeds a zero declaration individually.",
+    "signals": [
+      {
+        "key": "volume:txn-001",
+        "statement": "Transfer txn-001 exceeds the declared monthly volume.",
+        "confidence": 0.8,
+        "sources": [
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-001"
+          },
+          {
+            "tool": "get_kyc_profile",
+            "record_id": "kyc-001"
+          }
+        ]
+      },
+      {
+        "key": "volume:txn-002",
+        "statement": "Transfer txn-002 exceeds the declared monthly volume.",
+        "confidence": 0.8,
+        "sources": [
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-002"
+          },
+          {
+            "tool": "get_kyc_profile",
+            "record_id": "kyc-001"
+          }
+        ]
+      }
+    ],
+    "recommendation": "escalate"
+  }
+}

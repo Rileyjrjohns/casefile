@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "current-018",
+  "category": "sanctions",
+  "rationale": "Only the open alert-002 has no list entry behind it; the closed alert-001 is history and must not be cited. One gap on alert-002; request_information.",
+  "context": {
+    "subject_id": "demo-customer-218",
+    "alert_id": "current-alert-018",
+    "kind": "sanctions_match",
+    "description": "One closed and one open sanctions alert. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-218",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-218",
+          "legal_name": "Fictional Delta Quay 218",
+          "country": "FR",
+          "occupation": "Fictional demonstration activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-218",
+      "records": []
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-218",
+      "records": [
+        {
+          "record_id": "alert-001",
+          "customer_id": "demo-customer-218",
+          "kind": "sanctions_match",
+          "status": "closed",
+          "created_at": "2026-10-20T09:00:00Z",
+          "summary": "Historical screening hit."
+        },
+        {
+          "record_id": "alert-002",
+          "customer_id": "demo-customer-218",
+          "kind": "sanctions_match",
+          "status": "open",
+          "created_at": "2026-10-20T09:00:00Z",
+          "summary": "Current screening hit."
+        }
+      ]
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-218",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Delta Quay 218",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "Only the open alert creates a gap.",
+    "signals": [
+      {
+        "key": "gap:unresolved_sanctions:alert-002",
+        "statement": "An open sanctions alert has no returned list match. An empty tool response does not resolve the alert; obtain identification evidence for human review.",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "list_alerts",
+            "record_id": "alert-002"
+          }
+        ]
+      }
+    ],
+    "recommendation": "request_information"
+  }
+}

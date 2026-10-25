@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "provenance": "synthetic-fixture",
+  "request": {
+    "context": {
+      "alert_id": "current-alert-008",
+      "description": "One excessive transfer and two small ones. Entirely fictional evaluation case.",
+      "kind": "unusual_transaction",
+      "subject_id": "demo-customer-208"
+    },
+    "evidence": [
+      {
+        "query": "demo-customer-208",
+        "records": [
+          {
+            "country": "FR",
+            "customer_id": "demo-customer-208",
+            "expected_monthly_volume": "4000.00",
+            "legal_name": "Fictional Harbor Mill 208",
+            "occupation": "Fictional demonstration activity",
+            "record_id": "kyc-001",
+            "reviewed_at": "2026-10-01T09:00:00Z"
+          }
+        ],
+        "tool": "get_kyc_profile"
+      },
+      {
+        "query": "demo-customer-208",
+        "records": [
+          {
+            "amount": "4500.00",
+            "booked_at": "2026-10-02T10:00:00Z",
+            "counterparty": "Fictional Counterparty",
+            "country": "FR",
+            "currency": "EUR",
+            "customer_id": "demo-customer-208",
+            "record_id": "txn-001"
+          },
+          {
+            "amount": "1000.00",
+            "booked_at": "2026-10-09T10:00:00Z",
+            "counterparty": "Fictional Counterparty",
+            "country": "FR",
+            "currency": "EUR",
+            "customer_id": "demo-customer-208",
+            "record_id": "txn-002"
+          },
+          {
+            "amount": "1000.00",
+            "booked_at": "2026-10-16T10:00:00Z",
+            "counterparty": "Fictional Counterparty",
+            "country": "FR",
+            "currency": "EUR",
+            "customer_id": "demo-customer-208",
+            "record_id": "txn-003"
+          }
+        ],
+        "tool": "list_transactions"
+      },
+      {
+        "query": "demo-customer-208",
+        "records": [],
+        "tool": "list_alerts"
+      },
+      {
+        "query": "demo-customer-208",
+        "records": [],
+        "tool": "list_investigator_notes"
+      },
+      {
+        "query": "Fictional Harbor Mill 208",
+        "records": [],
+        "tool": "search_sanctions"
+      }
+    ],
+    "max_output_tokens": 1024,
+    "prompt_version": "casefile-narrative-v1",
+    "signals": [
+      {
+        "confidence": 0.8,
+        "key": "volume:txn-001",
+        "sources": [
+          {
+            "record_id": "txn-001",
+            "tool": "list_transactions"
+          },
+          {
+            "record_id": "kyc-001",
+            "tool": "get_kyc_profile"
+          }
+        ],
+        "statement": "Transfer txn-001 exceeds the declared monthly volume."
+      }
+    ]
+  },
+  "response": {
+    "estimated_cost": "0",
+    "input_tokens": 128,
+    "model": "fake-narrative-v1",
+    "output_tokens": 64,
+    "statements": [
+      {
+        "key": "volume:txn-001",
+        "sources": [
+          {
+            "record_id": "txn-001",
+            "tool": "list_transactions"
+          },
+          {
+            "record_id": "kyc-001",
+            "tool": "get_kyc_profile"
+          }
+        ],
+        "text": "Transfer txn-001 exceeds the declared monthly volume."
+      }
+    ],
+    "summary": "The demonstration policy identified 1 signal(s). Human review is required."
+  },
+  "reservation": {
+    "tool_calls": 0,
+    "tokens": 1536,
+    "estimated_cost": "0"
+  }
+}

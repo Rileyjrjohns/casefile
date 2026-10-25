@@ -1,0 +1,294 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "current-047",
+  "category": "credit",
+  "rationale": "Payslips and bank credits agree with the EUR 4000.00 declaration, so the monthly comparisons are matches, yet the independently contacted employer confirms only 2600.00 with no bonus, a 1400.00 gap. The independent employer response is the stronger source; the discrepancy is a finding. Escalate.",
+  "context": {
+    "subject_id": "demo-customer-247",
+    "alert_id": "current-alert-047",
+    "kind": "credit_document_fraud",
+    "description": "Credit application whose documents agree but contradict the employer. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-247",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-247",
+          "legal_name": "Demo Meadow Services 247",
+          "country": "FR",
+          "occupation": "Fictional demonstration activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-247",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-247",
+          "booked_at": "2026-10-02T10:00:00Z",
+          "amount": "1800.00",
+          "currency": "EUR",
+          "counterparty": "Demo Landlord",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-247",
+      "records": [
+        {
+          "record_id": "alert-001",
+          "customer_id": "demo-customer-247",
+          "kind": "document_mismatch",
+          "status": "open",
+          "created_at": "2026-10-20T09:00:00Z",
+          "summary": "Credit application awaiting income verification."
+        }
+      ]
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-247",
+      "records": []
+    },
+    {
+      "tool": "list_case_documents",
+      "query": "demo-customer-247",
+      "records": [
+        {
+          "record_id": "doc-001",
+          "customer_id": "demo-customer-247",
+          "kind": "credit_application",
+          "title": "Credit application and declared income",
+          "issuer": "Demo applicant submission",
+          "issued_at": "2026-10-15T09:00:00Z",
+          "verification": "unverified",
+          "fields": [
+            {
+              "name": "requested_amount",
+              "value": "15000.00"
+            },
+            {
+              "name": "currency",
+              "value": "EUR"
+            },
+            {
+              "name": "declared_monthly_income",
+              "value": "4000.00"
+            },
+            {
+              "name": "employer_ref",
+              "value": "DEMO-EMPLOYER-CEDAR"
+            }
+          ],
+          "text": "Application declaring recurring net monthly income."
+        },
+        {
+          "record_id": "doc-002",
+          "customer_id": "demo-customer-247",
+          "kind": "employment_confirmation",
+          "title": "Employer response by verified contact",
+          "issuer": "Demo payroll office",
+          "issued_at": "2026-10-15T09:00:00Z",
+          "verification": "independent",
+          "fields": [
+            {
+              "name": "monthly_net_pay",
+              "value": "2600.00"
+            },
+            {
+              "name": "currency",
+              "value": "EUR"
+            },
+            {
+              "name": "employer_ref",
+              "value": "DEMO-EMPLOYER-CEDAR"
+            },
+            {
+              "name": "recurring_bonus",
+              "value": "0.00"
+            }
+          ],
+          "text": "Payroll confirms recurring monthly net pay."
+        },
+        {
+          "record_id": "doc-003",
+          "customer_id": "demo-customer-247",
+          "kind": "payslip",
+          "title": "Submitted payslip 2026-08",
+          "issuer": "Demo applicant attachment",
+          "issued_at": "2026-10-15T09:00:00Z",
+          "verification": "unverified",
+          "fields": [
+            {
+              "name": "month",
+              "value": "2026-08"
+            },
+            {
+              "name": "net_pay",
+              "value": "4000.00"
+            },
+            {
+              "name": "currency",
+              "value": "EUR"
+            },
+            {
+              "name": "employer_ref",
+              "value": "DEMO-EMPLOYER-CEDAR"
+            }
+          ],
+          "text": "Payslip supplied by the applicant."
+        },
+        {
+          "record_id": "doc-004",
+          "customer_id": "demo-customer-247",
+          "kind": "payslip",
+          "title": "Submitted payslip 2026-09",
+          "issuer": "Demo applicant attachment",
+          "issued_at": "2026-10-15T09:00:00Z",
+          "verification": "unverified",
+          "fields": [
+            {
+              "name": "month",
+              "value": "2026-09"
+            },
+            {
+              "name": "net_pay",
+              "value": "4000.00"
+            },
+            {
+              "name": "currency",
+              "value": "EUR"
+            },
+            {
+              "name": "employer_ref",
+              "value": "DEMO-EMPLOYER-CEDAR"
+            }
+          ],
+          "text": "Payslip supplied by the applicant."
+        },
+        {
+          "record_id": "doc-005",
+          "customer_id": "demo-customer-247",
+          "kind": "bank_statement",
+          "title": "Salary credit extract 2026-08",
+          "issuer": "Demo account ledger",
+          "issued_at": "2026-10-15T09:00:00Z",
+          "verification": "independent",
+          "fields": [
+            {
+              "name": "month",
+              "value": "2026-08"
+            },
+            {
+              "name": "salary_credit",
+              "value": "4000.00"
+            },
+            {
+              "name": "currency",
+              "value": "EUR"
+            },
+            {
+              "name": "employer_ref",
+              "value": "DEMO-EMPLOYER-CEDAR"
+            }
+          ],
+          "text": "Ledger extract showing the salary credit."
+        },
+        {
+          "record_id": "doc-006",
+          "customer_id": "demo-customer-247",
+          "kind": "bank_statement",
+          "title": "Salary credit extract 2026-09",
+          "issuer": "Demo account ledger",
+          "issued_at": "2026-10-15T09:00:00Z",
+          "verification": "independent",
+          "fields": [
+            {
+              "name": "month",
+              "value": "2026-09"
+            },
+            {
+              "name": "salary_credit",
+              "value": "4000.00"
+            },
+            {
+              "name": "currency",
+              "value": "EUR"
+            },
+            {
+              "name": "employer_ref",
+              "value": "DEMO-EMPLOYER-CEDAR"
+            }
+          ],
+          "text": "Ledger extract showing the salary credit."
+        }
+      ]
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Demo Meadow Services 247",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "Consistent submitted documents are contradicted by the employer.",
+    "signals": [
+      {
+        "key": "context:income_match:doc-003",
+        "statement": "For 2026-08, the payslip amount matches the recorded salary credit (EUR 4000.00).",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "list_case_documents",
+            "record_id": "doc-003"
+          },
+          {
+            "tool": "list_case_documents",
+            "record_id": "doc-005"
+          }
+        ]
+      },
+      {
+        "key": "context:income_match:doc-004",
+        "statement": "For 2026-09, the payslip amount matches the recorded salary credit (EUR 4000.00).",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "list_case_documents",
+            "record_id": "doc-004"
+          },
+          {
+            "tool": "list_case_documents",
+            "record_id": "doc-006"
+          }
+        ]
+      },
+      {
+        "key": "finding:employer_discrepancy",
+        "statement": "Declared recurring monthly income is EUR 4000.00; the independently contacted employer confirms EUR 2600.00 including recurring bonuses. Reconcile the EUR 1400.00 difference before relying on the submitted income documents.",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "list_case_documents",
+            "record_id": "doc-001"
+          },
+          {
+            "tool": "list_case_documents",
+            "record_id": "doc-002"
+          }
+        ]
+      }
+    ],
+    "recommendation": "escalate"
+  }
+}

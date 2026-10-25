@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "current-005",
+  "category": "monthly_volume",
+  "rationale": "September totals 5600.00 and October 5500.00, both above 5000.00, and no transfer is individually above the declaration. One finding per month is expected, each citing the KYC profile and only that month's transfers. Escalate.",
+  "context": {
+    "subject_id": "demo-customer-205",
+    "alert_id": "current-alert-005",
+    "kind": "unusual_transaction",
+    "description": "Two consecutive months exceed the declaration. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-205",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-205",
+          "legal_name": "Fictional Harbor Mill 205",
+          "country": "FR",
+          "occupation": "Fictional demonstration activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-205",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-205",
+          "booked_at": "2026-09-04T10:00:00Z",
+          "amount": "3000.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        },
+        {
+          "record_id": "txn-002",
+          "customer_id": "demo-customer-205",
+          "booked_at": "2026-09-22T10:00:00Z",
+          "amount": "2600.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        },
+        {
+          "record_id": "txn-003",
+          "customer_id": "demo-customer-205",
+          "booked_at": "2026-10-03T10:00:00Z",
+          "amount": "4000.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        },
+        {
+          "record_id": "txn-004",
+          "customer_id": "demo-customer-205",
+          "booked_at": "2026-10-17T10:00:00Z",
+          "amount": "1500.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-205",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-205",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Harbor Mill 205",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "Each month is reported separately with its own transfers.",
+    "signals": [
+      {
+        "key": "monthly_volume:2026-09:EUR",
+        "statement": "Observed EUR transfers in 2026-09 total 5600.00, exceeding the declared monthly volume of EUR 5000.00. This compares the returned snapshot, not a verified complete monthly statement.",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "get_kyc_profile",
+            "record_id": "kyc-001"
+          },
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-001"
+          },
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-002"
+          }
+        ]
+      },
+      {
+        "key": "monthly_volume:2026-10:EUR",
+        "statement": "Observed EUR transfers in 2026-10 total 5500.00, exceeding the declared monthly volume of EUR 5000.00. This compares the returned snapshot, not a verified complete monthly statement.",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "get_kyc_profile",
+            "record_id": "kyc-001"
+          },
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-003"
+          },
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-004"
+          }
+        ]
+      }
+    ],
+    "recommendation": "escalate"
+  }
+}
