@@ -193,7 +193,9 @@ Local-policy measurement excerpt (one offline run on the 30-case corpus):
 
 The negative controls expose a limitation of the fixed support policy: neutral
 0.5 scores count as positives at the benchmark boundary. This policy is not a
-general evidence classifier. Latencies are local wall time and vary by machine.
+general evidence classifier. Injection labels come from the same pattern set the
+local policy uses, so that row checks consistency, not detection quality.
+Latencies are local wall time and vary by machine.
 
 The risk model uses 6,000 seeded synthetic transactions and a 3,600/1,200/1,200
 train/validation/test split:
