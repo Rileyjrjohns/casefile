@@ -235,13 +235,23 @@ class ReplayTransport:
         return httpx.Response(200, json=response)
 
 
-def settings(name: str, live: bool) -> DecisionSettings:
+def captured(recording: Recording) -> str:
+    when = recording.recorded_at
+    return when.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ") if when else "at an unknown time"
+
+
+def settings(name: str, live: bool, recording: Recording | None = None) -> DecisionSettings:
+    """Live settings come from the environment; replay settings come from the recording.
+
+    A replay sends the model name its recording was made with, so the request bodies match the
+    recorded keys. Synthetic fixtures name no model and use their own placeholder.
+    """
     if not live:
         return DecisionSettings(
             "https://replay.invalid/v1/systemone"
             if name == "jev"
             else "https://replay.invalid/v1/chat/completions",
-            f"{name}-synthetic-protocol-v1",
+            (recording.model if recording else None) or f"{name}-synthetic-protocol-v1",
             "",
             Decimal(0),
             Decimal(0),
@@ -327,7 +337,7 @@ async def write_synthetic_fixtures(root: Path) -> None:
         (destination / f"{name}.json").write_text(
             Recording(
                 schema_version=1, provenance="synthetic-protocol-fixture", responses=responses
-            ).model_dump_json(indent=2)
+            ).model_dump_json(indent=2, exclude_none=True)
             + "\n"
         )
 
@@ -377,10 +387,12 @@ async def benchmark(
                 models[name] = local or LocalDecisionModel(
                     RiskBridge(LocalRiskModel.load_default())
                 )
-            elif name == "jev":
-                models[name] = JevDecisionModel(client, settings(name, live))
+                continue
+            configured = settings(name, live, replay.recordings[name] if replay else None)
+            if name == "jev":
+                models[name] = JevDecisionModel(client, configured)
             else:
-                models[name] = LlmDecisionModel(HttpLanguageModel(client, settings(name, live)))
+                models[name] = LlmDecisionModel(HttpLanguageModel(client, configured))
         for name, model in models.items():
             if name == "local":
                 provenance[name] = "measured local policy; tabular risk evaluated separately"
@@ -482,6 +494,11 @@ async def benchmark(
         )
         + "\n"
     )
+    genuine = {
+        name: recording
+        for name, recording in (replay.recordings if replay else {}).items()
+        if recording.provenance == "provider-recording"
+    }
     lines = [
         "# Typed decision comparison",
         "",
@@ -500,6 +517,20 @@ async def benchmark(
         "separately configured providers. Local rows measure the explicit policy; tabular "
         "risk has a separate held-out dataset.",
         "",
+        *(
+            [
+                "Provider recordings replay genuine provider answers captured earlier: "
+                + "; ".join(
+                    f"{name}: requested model `{recording.model}`, recorded {captured(recording)}"
+                    for name, recording in genuine.items()
+                )
+                + ". Their accuracy and calibration describe that provider at that time; their "
+                "latency is local replay and their cost is the zero offline rate.",
+                "",
+            ]
+            if genuine
+            else []
+        ),
         "Identical questions are the decision requests the agent really sent while running "
         "every case of both suites (the 30 findings-v1 regression cases and the current-policy "
         "cases) under the demonstration decisions, tabular risk excluded. Each adapter receives "
