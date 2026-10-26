@@ -181,14 +181,17 @@ labels know the demo pattern set. This is not real fraud accuracy.
 
 The independent **evaluation runner** sends identical questions to each decision
 adapter and reports accuracy, ten-bin ECE, p50/p95 latency and estimated USD per
-case, per decision purpose. Its labels encode a narrow demo policy and include
-unsupported-claim controls. It is not an independently annotated financial
-benchmark or a vendor ranking.
+case, per decision purpose. The questions are the decision requests the agent
+really sends while running every case of both suites (2,617 questions, tabular
+risk excluded), and each label declares its basis: reference analysis, documented
+rule, or a consistency check that shares its input with the demo policy. Unsupported-claim
+controls and guard denials are added. It is not an independently annotated
+financial benchmark or a vendor ranking.
 
 | Adapter | Available evidence | Live vendor performance |
 | --- | --- | --- |
-| Local | Measured explicit policy; learned risk measured separately | No external provider |
-| Jev | Synthetic protocol replay and a dated live measurement | 294 questions; recommendation agreement 23/30 on the frozen corpus |
+| Local | Measured demo policy plus learned risk model; risk measured separately | No external provider |
+| Jev | Synthetic protocol replay and a dated live measurement | 294 hand-built questions; recommendation agreement 23/30 on the frozen corpus |
 | LLM | Synthetic protocol replay through structured validation | Not measured; credentials required |
 
 Fixture accuracy, ECE, latency and zero costs must not be presented as Jev/LLM
@@ -204,19 +207,31 @@ the injection disagreements have been reproduced in complete investigations and
 are covered by explicit closure constraints. The raw measurement remains unchanged.
 This is one synthetic-corpus measurement, not real fraud accuracy.
 
-Local-policy measurement excerpt (one offline run on the 30-case corpus):
+Local-policy measurement excerpt (one offline run on the recorded questions of both
+suites; `local` means demo policy plus the learned risk model, see
+[ADR 024](docs/adr/0024-two-language-model-ports-and-the-meaning-of-local.md)):
 
-| Decision | Questions | Accuracy | ECE | p50 / p95 ms | USD / case |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Recommendation | 30 | 1.000 | 0.000 | 0.008 / 0.009 | 0 |
-| Injection, demo pattern set | 30 | 1.000 | 0.000 | 0.009 / 0.012 | 0 |
-| Signal support, including negative controls | 54 | 0.444 | 0.391 | 0.008 / 0.009 | 0 |
+| Decision | Questions | Label basis | Accuracy | ECE | p50 / p95 ms | USD / case |
+| --- | ---: | --- | ---: | ---: | ---: | ---: |
+| Recommendation | 99 | reference | 1.000 | 0.000 | 0.006 / 0.008 | 0 |
+| Injection, demo pattern set | 550 | reference | 1.000 | 0.000 | 0.036 / 0.190 | 0 |
+| Signal support, including negative controls | 237 | reference | 0.582 | 0.268 | 0.009 / 0.015 | 0 |
+| Priority | 99 | documented rule | 0.889 | 0.111 | 0.005 / 0.006 | 0 |
+| Tool route | 519 | documented rule | 1.000 | 0.000 | 0.005 / 0.006 | 0 |
+| Model route (single option) | 99 | documented rule | 1.000 | 0.000 | 0.004 / 0.005 | 0 |
+| Alert type | 99 | consistency check | 1.000 | 0.000 | 0.005 / 0.006 | 0 |
+| Guard | 915 | consistency check | 1.000 | 0.000 | 0.004 / 0.005 | 0 |
 
-The negative controls expose a limitation of the fixed support policy: neutral
-0.5 scores count as positives at the benchmark boundary. This policy is not a
-general evidence classifier. Injection labels come from the same pattern set the
-local policy uses, so that row checks consistency, not detection quality.
-Latencies are local wall time and vary by machine.
+The signal row exposes a limitation of the fixed support policy: neutral 0.5 scores
+count as positives at the benchmark boundary. The priority row exposes that the demo
+policy does not mark `sanctions_identity_review` alerts high. Injection labels come
+from the case expectations, which were written knowing the demo pattern set, and
+consistency rows only check drift. The benchmark's offline Jev and LLM rows are
+synthetic protocol fixtures derived from this policy, so they equal the local rows by
+construction; real Jev recordings require your own API key and were not recorded.
+`evals/decision-thresholds.toml` sets per-purpose accuracy floors for `local`
+that fail `make eval` on a regression; they record these measurements and are not
+quality targets. Latencies are local wall time and vary by machine.
 
 The risk model uses 6,000 seeded synthetic transactions and a 3,600/1,200/1,200
 train/validation/test split:
@@ -257,7 +272,7 @@ Vite proxies `/api` to port 8000.
 | `make test-mcp` | Evidence contracts and stdio/HTTP protocol tests |
 | `make demo-agent` | Isolated command-line regression-profile investigation |
 | `make train-risk` | Reproduce the CSV, checkpoint, weights and metrics |
-| `make eval` | Structural thresholds of both suites (findings-v1 and current-policy) and offline decision contracts |
+| `make eval` | Structural thresholds of both suites (findings-v1 and current-policy), offline decision contracts and the local accuracy floors |
 | `make eval EVAL_MODE=http` | Live narrative model with replayed fictional tools, for both suites |
 | `make eval-decisions-live` | Live comparison; use `DECISION_PROVIDERS="local jev"` with a Jev-only setup |
 

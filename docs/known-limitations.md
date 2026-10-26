@@ -37,6 +37,14 @@
   Operational labels encode the demo policy and do not establish real-world
   effectiveness. No live LLM comparison has been measured. Manual workflows
   require explicit credentials, model names and prices for selected providers.
+- The demo policy marks only `sanctions_match` alerts high priority, while the
+  benchmark's documented rule also treats `sanctions_identity_review` alerts as
+  sanctions alerts, so `local` scores 0.889 on priority. Its fixed support scores
+  also place neutral evidence above the benchmark's 0.5 boundary (signal accuracy
+  0.582). The accuracy floors in `evals/decision-thresholds.toml` record these
+  results as regression guards, not as acceptable quality. Offline Jev and LLM
+  rows come from synthetic fixtures derived from the same policy; real Jev
+  recordings need the user's API key and have not been recorded.
 - Raw decision questions and complete investigations supply different context.
   Reproducing the three injection cases through the API/worker produced two
   escalation recommendations and one request for information. A deterministic
