@@ -1,0 +1,21 @@
+# Regression floors for the offline `local` adapter (demo policy plus the learned risk model).
+#
+# Each floor is the accuracy measured on the recorded questions of both suites, rounded down to
+# three decimals. A floor guards against regressions only; it is not a quality target. The demo
+# policy scores 0.889 on priority (it marks sanctions_match alerts high but not
+# sanctions_identity_review alerts) and 0.582 on signal (its fixed support scores put neutral
+# evidence above the 0.5 boundary), and those weaknesses are kept visible on purpose. Raise a
+# floor when the policy improves; never lower one to make a regression pass.
+# Remote providers are never gated, and `consistency` purposes only check label drift.
+schema_version = 1
+adapter = "local"
+
+[min_accuracy]
+alert_type = 1.0
+guard = 1.0
+injection = 1.0
+model_route = 1.0
+priority = 0.888
+recommendation = 1.0
+signal = 0.582
+tool_route = 1.0

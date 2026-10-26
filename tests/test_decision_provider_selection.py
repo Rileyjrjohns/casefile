@@ -18,6 +18,8 @@ def dataset(tmp_path: Path, *providers: str) -> Path:
     root.mkdir()
     (root / "golden").symlink_to(Path("evals/golden").resolve(), target_is_directory=True)
     (root / "replay").symlink_to(Path("evals/replay").resolve(), target_is_directory=True)
+    (root / "current").symlink_to(Path("evals/current").resolve(), target_is_directory=True)
+    (root / "decision-thresholds.toml").symlink_to(Path("evals/decision-thresholds.toml").resolve())
     if providers:
         (root / "decision-replay").mkdir()
         for name in providers:
@@ -40,7 +42,8 @@ async def test_offline_subset_needs_only_selected_recording(tmp_path: Path) -> N
     report = await benchmark(dataset(tmp_path, "jev"), tmp_path / "out", providers=("jev",))
     assert report.passed
     assert set(report.adapters) == {"jev"}
-    assert report.models["jev"] == ("jev-synthetic-protocol-v1",)
+    # A choice with a single option is resolved locally and never reaches the provider.
+    assert report.models["jev"] == ("jev-synthetic-protocol-v1", "singleton-route")
     observations = json.loads((tmp_path / "out/decision-observations.json").read_text())
     assert observations["jev"][0]["expected"] == "normal"
     assert observations["jev"][0]["value"] == "normal"
@@ -110,11 +113,21 @@ async def test_live_jev_subset_keeps_budget_and_observation_audit(
     assert report.passed is (max_tokens > 1)
     assert set(report.adapters) == {"jev"}
     assert report.provenance == {"jev": "live provider"}
-    assert report.models["jev"] == (("jev-test-version",) if requests else ())
+    probes = await module.collect_probes(Path("evals"))
+    singletons = [
+        p for p in probes if p.question.operation == "choose" and len(p.question.options) == 1
+    ]
+    assert singletons
+    assert report.models["jev"] == (("jev-test-version", "singleton-route") if requests else ())
     rows = json.loads((tmp_path / "out/decision-observations.json").read_text())["jev"]
-    assert len(rows) == len(module.probes(Path("evals")))
-    assert len(requests) == (len(rows) if max_tokens > 1 else 0)
-    assert all(Decimal(row["cost"]) == Decimal("0.0000042") for row in rows if not row["error"])
+    assert len(rows) == len(probes)
+    assert len(requests) == (len(rows) - len(singletons) if max_tokens > 1 else 0)
+    assert all(
+        Decimal(row["cost"])
+        == (Decimal(0) if row["model"] == "singleton-route" else Decimal("0.0000042"))
+        for row in rows
+        if not row["error"]
+    )
     assert "test-only-key" not in (tmp_path / "out/decision-observations.json").read_text()
 
 
