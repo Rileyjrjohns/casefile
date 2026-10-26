@@ -10,9 +10,10 @@ from casefile.features.investigation.domain.analysis import (
     SourceReference,
 )
 from casefile.features.investigation.domain.budget import BudgetLimits
+from casefile.features.investigation.domain.errors import InvestigationError, InvestigationErrorCode
 from casefile.features.investigation.domain.run import HumanDecision, Run, RunState
 from casefile.shared.ids import CaseId, ConclusionId, ReviewerId, ReviewId, RunId
-from casefile.shared.result import Ok, Result
+from casefile.shared.result import Err, Ok, Result
 
 RUN_ID = RunId(UUID(int=1))
 CASE_ID = CaseId(UUID(int=2))
@@ -25,6 +26,12 @@ AT = datetime(2026, 10, 24, 12, tzinfo=UTC)
 def value[T, E](result: Result[T, E]) -> T:
     assert isinstance(result, Ok), result
     return result.value
+
+
+def error_code[T](result: Result[T, InvestigationError]) -> InvestigationErrorCode:
+    """Return the business error code, failing the test when the result succeeded."""
+    assert isinstance(result, Err), result
+    return result.error.code
 
 
 def source() -> SourceReference:
