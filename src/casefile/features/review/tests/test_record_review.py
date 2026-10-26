@@ -1,3 +1,4 @@
+from dataclasses import FrozenInstanceError
 from datetime import UTC, datetime, timedelta, timezone
 from uuid import UUID
 
@@ -175,3 +176,14 @@ async def test_commit_checks_revision_again_after_read() -> None:
     assert isinstance(accepted, Ok)
     stale = await store.commit(accepted.value, expected_revision=4)
     assert error_code(stale) == ReviewErrorCode.CONFLICT
+
+
+def test_commands_and_the_use_case_are_immutable() -> None:
+    request = command()
+    for target, field in (
+        (request, "decision"),
+        (request.conclusions[0], "action"),
+        (use_case(gateway()), "clock"),
+    ):
+        with pytest.raises(FrozenInstanceError):
+            setattr(target, field, None)
