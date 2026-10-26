@@ -1,5 +1,6 @@
 """Task-level calibration uses outcome probabilities, not provider certainty statistics."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from math import ceil
@@ -38,3 +39,32 @@ def summarize(rows: tuple[DecisionMeasurement, ...]) -> dict[str, str | int | fl
         ),
         "errors": sum(r.error is not None for r in rows),
     }
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionThresholds:
+    """Regression floors on one offline adapter's accuracy per decision purpose.
+
+    A floor records what the adapter achieved when it was set. It guards against regressions and
+    is not a quality target: the demo policy is allowed to score low on a purpose.
+    """
+
+    adapter: str
+    min_accuracy: tuple[tuple[str, float], ...]
+
+
+def accuracy_violations(
+    accuracy: Mapping[str, float], thresholds: DecisionThresholds
+) -> tuple[str, ...]:
+    """Name every gated purpose whose measured accuracy is missing or below its floor."""
+    violations: list[str] = []
+    for purpose, floor in thresholds.min_accuracy:
+        measured = accuracy.get(purpose)
+        if measured is None:
+            violations.append(f"{thresholds.adapter}/{purpose}: not measured.")
+        elif measured < floor:
+            violations.append(
+                f"{thresholds.adapter}/{purpose}: accuracy {measured:.3f} "
+                f"is below the minimum {floor:.3f}."
+            )
+    return tuple(violations)

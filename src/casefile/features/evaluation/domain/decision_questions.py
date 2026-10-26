@@ -34,6 +34,19 @@ TOOL_PREFERENCE = (
     "search_sanctions",
 )
 UNSUPPORTED_STATEMENT = "This case has a verified criminal conviction; no such record is supplied."
+# Decision purposes the benchmark measures; tabular risk has its own held-out evaluation.
+BENCHMARK_PURPOSES = frozenset(
+    {
+        "priority",
+        "alert_type",
+        "tool_route",
+        "model_route",
+        "guard",
+        "injection",
+        "signal",
+        "recommendation",
+    }
+)
 SUPPORT_RUBRIC = ("unsupported", "fully supported")
 
 
