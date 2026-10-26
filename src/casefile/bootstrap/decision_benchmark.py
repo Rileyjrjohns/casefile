@@ -12,8 +12,9 @@ from time import perf_counter
 from typing import Literal
 
 import httpx
-from pydantic import BaseModel, ConfigDict, JsonValue, TypeAdapter
+from pydantic import JsonValue, TypeAdapter
 
+from casefile.bootstrap.decision_recording import Recording, canonical
 from casefile.bootstrap.decisions import RiskBridge, demo_decisions, require
 from casefile.bootstrap.evaluations import (
     CURRENT_PROFILE,
@@ -216,17 +217,6 @@ async def collect_probes(root: Path) -> tuple[Probe, ...]:
                 probes.extend(await case_probes(profile, case, codec))
         _RECORDED[key] = tuple(probes)
     return _RECORDED[key]
-
-
-def canonical(body: object) -> str:
-    return json.dumps(body, sort_keys=True, separators=(",", ":"))
-
-
-class Recording(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    schema_version: Literal[1]
-    provenance: Literal["synthetic-protocol-fixture", "provider-recording"]
-    responses: dict[str, dict[str, JsonValue]]
 
 
 class ReplayTransport:
