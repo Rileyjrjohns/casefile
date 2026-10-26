@@ -301,7 +301,7 @@ Docker Desktop may require `DOCKER_HOST` set to its socket and
 | httpx | Provider-neutral HTTP and offline contract transports |
 | PyTorch + scikit-learn + NumPy | Deterministic tabular model and baseline |
 | React + Vite + strict TypeScript | One focused review screen and static deployment |
-| Vitest + Testing Library; Playwright | Review interaction tests and browser validation |
+| Vitest + Testing Library | Review interaction tests in jsdom (no real-browser end-to-end suite) |
 | OpenTelemetry | Run/call spans without evidence or credentials in logs |
 | Ruff, mypy, import-linter, Hypothesis, Testcontainers | Formatting, typing, boundaries, invariants and persistence contracts |
 
