@@ -27,7 +27,15 @@ from casefile.features.evaluation.adapters.outbound.golden import load_suite
 from casefile.features.evaluation.domain.decision_metrics import DecisionMeasurement, summarize
 from casefile.features.investigation.adapters.outbound.agent.codec import AgentJsonCodec
 from casefile.features.investigation.application.agent_policy import candidates
-from casefile.features.investigation.application.tools import InvestigatorNote, KycProfile
+from casefile.features.investigation.application.agent_types import CaseContext, EvidenceBatch
+from casefile.features.investigation.application.banking_policy import BANKING_KINDS
+from casefile.features.investigation.application.decisions import state_json
+from casefile.features.investigation.application.guard_policy import guard_state
+from casefile.features.investigation.application.tools import (
+    InvestigatorNote,
+    KycProfile,
+    ToolName,
+)
 from casefile.features.risk_scoring.adapters.outbound.local import LocalRiskModel
 
 PROVIDERS = ("local", "jev", "llm")
@@ -49,6 +57,41 @@ class DecisionReport:
     provenance: dict[str, str]
     measured_at: str
     models: dict[str, tuple[str, ...]]
+
+
+def guard_probes(
+    case_id: str, context: CaseContext, batches: tuple[EvidenceBatch, ...]
+) -> tuple[Probe, ...]:
+    """Guard questions use the agent's own state builder, so formats cannot drift apart.
+
+    Positives are the states the agent sends for this case's recorded tool calls. Negatives are
+    realistic denials: another customer, an unrelated sanctions name, a tool the workflow does
+    not allow, and a repeated call.
+    """
+
+    def probe(tool: ToolName, query: str, seen: tuple[EvidenceBatch, ...], allowed: bool) -> Probe:
+        state = state_json(guard_state(tool, query, context, seen))
+        return Probe(
+            case_id, require(Question.create("probability", "guard", state)).value, allowed
+        )
+
+    other = (
+        "demo-customer-900" if context.subject_id != "demo-customer-900" else "demo-customer-901"
+    )
+    banking = context.kind in BANKING_KINDS
+    first = batches[0]
+    return (
+        *(probe(b.tool, b.query, batches[:i], True) for i, b in enumerate(batches)),
+        probe(ToolName.TRANSACTIONS, other, (), False),
+        probe(
+            ToolName.SANCTIONS,
+            "Unrelated Counterparty Ltd",
+            tuple(b for b in batches if b.tool != ToolName.SANCTIONS),
+            False,
+        ),
+        probe(ToolName.SANCTIONS if banking else ToolName.DOCUMENTS, context.subject_id, (), False),
+        probe(first.tool, first.query, batches[:1], False),
+    )
 
 
 def probes(root: Path) -> tuple[Probe, ...]:
@@ -118,13 +161,7 @@ def probes(root: Path) -> tuple[Probe, ...]:
             "primary",
             ("primary", "conservative"),
         )
-        for allowed in (True, False):
-            add(
-                "probability",
-                "guard",
-                {"authorized": allowed, "tool": "get_kyc_profile", "query": context.subject_id},
-                allowed,
-            )
+        result.extend(guard_probes(case.id, context, batches))
         add(
             "probability",
             "injection",
@@ -431,7 +468,9 @@ async def benchmark(
         "Identical questions are extracted from the 30 frozen cases. Operational labels encode "
         "demonstration policy; investigation labels come from the reference analyses. ECE uses "
         "ten bins of selected-outcome probability (not provider certainty). Signal scores are "
-        "thresholded at 0.5 and include unsupported-claim controls. These are narrow, correlated "
+        "thresholded at 0.5 and include unsupported-claim controls. Guard rows pair the exact "
+        "states the agent sends with synthetic denials (other customer, unrelated sanctions name, "
+        "disallowed tool, repeated call). These are narrow, correlated "
         "synthetic examples pending independent human review.",
         "",
         "| Adapter | Provenance | Decision | N | Accuracy | ECE | p50 / p95 ms | "
