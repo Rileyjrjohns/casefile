@@ -123,6 +123,67 @@ def test_forbidden_import_breaks_contract(
     assert f"{contract} BROKEN" in result.stdout, result.stdout + result.stderr
 
 
+IO_CONTRACT = "Domain, application and shared stay free of I/O standard-library modules"
+IO_STATEMENTS = (
+    "import socket",
+    "import ssl",
+    "import subprocess",
+    "import multiprocessing",
+    "import urllib.request",
+    "from urllib import parse",
+    "import http.client",
+    "from http import HTTPStatus",
+    "import ftplib",
+    "import smtplib",
+    "import sqlite3",
+    "from multiprocessing import pool",
+    "from typing import TYPE_CHECKING\nif TYPE_CHECKING:\n    import socket",
+)
+
+
+@pytest.mark.parametrize(
+    "importer", ["features/investigation/domain", "features/review/application", "shared"]
+)
+@pytest.mark.parametrize("statement", IO_STATEMENTS)
+def test_io_standard_library_breaks_core_layer_contract(
+    package_root: Path, importer: str, statement: str
+) -> None:
+    module = package_root / "casefile" / importer / "example.py"
+    module.write_text(f"{statement}\n", encoding="utf-8")
+
+    result = lint_imports(package_root)
+
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert f"{IO_CONTRACT} BROKEN" in result.stdout, result.stdout + result.stderr
+    assert "example" in result.stdout
+
+
+@pytest.mark.parametrize("importer", ["features/investigation/adapters/outbound", "bootstrap"])
+@pytest.mark.parametrize(
+    "statement", ["import socket", "import subprocess", "import urllib.request"]
+)
+def test_io_standard_library_stays_available_to_adapters_and_bootstrap(
+    package_root: Path, importer: str, statement: str
+) -> None:
+    module = package_root / "casefile" / importer / "example.py"
+    module.write_text(f"{statement}\n", encoding="utf-8")
+
+    result = lint_imports(package_root)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_pure_standard_library_modules_stay_allowed_in_core_layers(package_root: Path) -> None:
+    statement = "import json\nimport re\nimport asyncio\nfrom datetime import UTC\nfrom pathlib import PurePath"
+    for importer in ("shared", "features/investigation/domain", "features/review/application"):
+        module = package_root / "casefile" / importer / "example.py"
+        module.write_text(f"{statement}\n", encoding="utf-8")
+
+    result = lint_imports(package_root)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_allowed_dependencies_keep_all_contracts(package_root: Path) -> None:
     imports = {
         "shared": "from dataclasses import dataclass",
@@ -148,4 +209,4 @@ def test_allowed_dependencies_keep_all_contracts(package_root: Path) -> None:
     result = lint_imports(package_root)
 
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "5 kept, 0 broken" in result.stdout
+    assert "6 kept, 0 broken" in result.stdout

@@ -39,6 +39,8 @@ typing imports. Tests introduce forbidden imports into a temporary package to
 verify that they are rejected. The contract in `quality/contracts.py` uses
 Python's standard library module list to distinguish standard library modules
 from third-party packages, without maintaining a manual list of vendors.
+A second contract rejects standard-library modules that perform I/O in these
+layers ([ADR 027](./0027-no-io-standard-library-in-core-layers.md)).
 It remains a development tool, excluded from the application wheel.
 
 ## Alternatives considered

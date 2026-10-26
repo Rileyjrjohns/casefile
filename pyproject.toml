@@ -129,7 +129,10 @@ fail_under = 80
 root_package = "casefile"
 include_external_packages = true
 exclude_type_checking_imports = false
-contract_types = ["stdlib-only: quality.contracts.StandardLibraryOnlyContract"]
+contract_types = [
+    "stdlib-only: quality.contracts.StandardLibraryOnlyContract",
+    "no-io-stdlib: quality.contracts.NoIoStandardLibraryContract",
+]
 
 [[tool.importlinter.contracts]]
 name = "Bootstrap wires features; shared stays independent"
@@ -160,3 +163,7 @@ exhaustive = true
 [[tool.importlinter.contracts]]
 name = "Third-party packages stay outside domain, application and shared"
 type = "stdlib-only"
+
+[[tool.importlinter.contracts]]
+name = "Domain, application and shared stay free of I/O standard-library modules"
+type = "no-io-stdlib"
