@@ -23,3 +23,5 @@
 - [0021-fact-based-tool-guard](./0021-fact-based-tool-guard.md)
 - [0022-deterministic-conclusion-text-and-summary-backstop](./0022-deterministic-conclusion-text-and-summary-backstop.md)
 - [0023-separate-current-policy-evaluation-suite](./0023-separate-current-policy-evaluation-suite.md)
+- [0024-two-language-model-ports-and-the-meaning-of-local](./0024-two-language-model-ports-and-the-meaning-of-local.md)
+- [0025-benchmark-questions-recorded-from-agent-runs](./0025-benchmark-questions-recorded-from-agent-runs.md)
