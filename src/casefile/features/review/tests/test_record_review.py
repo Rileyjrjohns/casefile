@@ -128,6 +128,7 @@ async def test_a_stale_revision_wins_over_conclusion_problems() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.usefixtures("local_timezone")
 async def test_review_is_stamped_with_the_clock_in_utc() -> None:
     store = gateway()
     local = datetime(2026, 10, 24, 14, tzinfo=timezone(timedelta(hours=2)))
