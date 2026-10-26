@@ -9,15 +9,64 @@ from urllib.parse import urlsplit
 from uuid import UUID
 
 from fastapi import FastAPI, Query, Request
+from fastapi.exceptions import HTTPException, RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from pydantic import JsonValue
 from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from casefile.bootstrap.runtime import Runtime, TransportFailure
 from casefile.features.case_intake.adapters.inbound.documents import OpenCaseDocument
 from casefile.features.evaluation.adapters.inbound.documents import PromoteReferenceDocument
 from casefile.features.investigation.adapters.inbound.documents import StartRunDocument
 from casefile.features.review.adapters.inbound.documents import ReviewDocument
+
+MAX_BODY_BYTES = 1024 * 1024
+
+
+class PayloadTooLarge(HTTPException):
+    """Raised while reading a body past the limit; an HTTPException survives FastAPI's parsing."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=413, detail="Request body is too large.")
+
+
+def payload_too_large() -> JSONResponse:
+    return JSONResponse(
+        {
+            "error": "payload_too_large",
+            "message": f"Request body exceeds {MAX_BODY_BYTES} bytes.",
+        },
+        status_code=413,
+    )
+
+
+class BodyLimitMiddleware:
+    """Refuse oversized bodies from Content-Length or, for chunked uploads, while streaming."""
+
+    def __init__(self, app: ASGIApp, *, limit: int = MAX_BODY_BYTES) -> None:
+        self.app, self.limit = app, limit
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        for name, raw in scope["headers"]:
+            if name == b"content-length" and raw.isdigit() and int(raw) > self.limit:
+                await payload_too_large()(scope, receive, send)
+                return
+        received = 0
+
+        async def limited() -> Message:
+            nonlocal received
+            message = await receive()
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > self.limit:
+                    raise PayloadTooLarge
+            return message
+
+        await self.app(scope, limited, send)
 
 
 async def work(runtime: Runtime) -> None:
@@ -51,6 +100,10 @@ def create_app(
         TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "[::1]", "testserver"]
     )
 
+    # Added before `boundary` so it runs inside it: an error raised while the body is read must
+    # reach FastAPI's handlers directly, not through BaseHTTPMiddleware's task group.
+    app.add_middleware(BodyLimitMiddleware)
+
     @app.middleware("http")
     async def boundary(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
@@ -73,6 +126,24 @@ def create_app(
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         return response
+
+    @app.exception_handler(PayloadTooLarge)
+    async def too_large(request: Request, error: PayloadTooLarge) -> JSONResponse:
+        return payload_too_large()
+
+    @app.exception_handler(RequestValidationError)
+    async def invalid_request(request: Request, error: RequestValidationError) -> JSONResponse:
+        # Only locations and error types: pydantic's default also echoes the input and ctx.
+        return JSONResponse(
+            {
+                "error": "validation_error",
+                "message": "Request validation failed.",
+                "detail": [
+                    {"loc": list(item["loc"]), "type": item["type"]} for item in error.errors()
+                ],
+            },
+            status_code=422,
+        )
 
     @app.exception_handler(TransportFailure)
     async def failure(request: Request, error: TransportFailure) -> JSONResponse:
