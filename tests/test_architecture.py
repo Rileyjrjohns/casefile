@@ -174,7 +174,10 @@ def test_io_standard_library_stays_available_to_adapters_and_bootstrap(
 
 
 def test_pure_standard_library_modules_stay_allowed_in_core_layers(package_root: Path) -> None:
-    statement = "import json\nimport re\nimport asyncio\nfrom datetime import UTC\nfrom pathlib import PurePath"
+    statement = (
+        "import json\nimport re\nimport asyncio\nfrom datetime import UTC\n"
+        "from pathlib import PurePath"
+    )
     for importer in ("shared", "features/investigation/domain", "features/review/application"):
         module = package_root / "casefile" / importer / "example.py"
         module.write_text(f"{statement}\n", encoding="utf-8")
