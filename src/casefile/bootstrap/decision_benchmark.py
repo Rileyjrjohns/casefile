@@ -4,7 +4,9 @@ import argparse
 import asyncio
 import json
 import os
-from dataclasses import asdict, dataclass
+import sys
+from collections.abc import Mapping
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -14,7 +16,12 @@ from typing import Literal
 import httpx
 from pydantic import JsonValue, TypeAdapter
 
-from casefile.bootstrap.decision_recording import Recording, canonical
+from casefile.bootstrap.decision_recording import (
+    Recording,
+    RecordingTransport,
+    canonical,
+    write_recording,
+)
 from casefile.bootstrap.decisions import RiskBridge, demo_decisions, require
 from casefile.bootstrap.evaluations import (
     CURRENT_PROFILE,
@@ -62,7 +69,7 @@ from casefile.features.investigation.application.guard_policy import guard_state
 from casefile.features.investigation.application.tools import ToolName
 from casefile.features.investigation.domain.budget import BudgetUsage
 from casefile.features.risk_scoring.adapters.outbound.local import LocalRiskModel
-from casefile.shared.result import Err, Result
+from casefile.shared.result import Err, Ok, Result
 
 PROVIDERS = ("local", "jev", "llm")
 THRESHOLDS_FILE = "decision-thresholds.toml"
@@ -95,6 +102,7 @@ class DecisionReport:
     measured_at: str
     models: dict[str, tuple[str, ...]]
     gate_violations: tuple[str, ...] = ()
+    recordings: dict[str, str] = field(default_factory=dict)
 
 
 class RecordingDecisions:
@@ -240,6 +248,11 @@ def captured(recording: Recording) -> str:
     return when.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ") if when else "at an unknown time"
 
 
+def provider_transport() -> httpx.AsyncBaseTransport:
+    """The network path to a live provider; tests substitute a mock provider here."""
+    return httpx.AsyncHTTPTransport(trust_env=False)
+
+
 def settings(name: str, live: bool, recording: Recording | None = None) -> DecisionSettings:
     """Live settings come from the environment; replay settings come from the recording.
 
@@ -342,6 +355,43 @@ async def write_synthetic_fixtures(root: Path) -> None:
         )
 
 
+def save_recordings(
+    destination: Path,
+    capture: RecordingTransport,
+    recorded_at: datetime,
+    configured: Mapping[str, DecisionSettings],
+    rows: Mapping[str, list[DecisionMeasurement]],
+) -> dict[str, str]:
+    """Write one recording per remote provider whose every question completed, and say why not.
+
+    A provider with a failed or budget-stopped question gets no file: its recording would not
+    cover what the offline benchmark replays, and the existing file stays as it was.
+    """
+    status: dict[str, str] = {}
+    for name, provider in configured.items():
+        failed = [row for row in rows[name] if row.error is not None]
+        if failed:
+            status[name] = (
+                f"not written: {len(failed)} of {len(rows[name])} questions did not complete "
+                f"({', '.join(sorted({str(row.error) for row in failed}))}), and a recording "
+                "must cover every question"
+            )
+            continue
+        written = write_recording(
+            destination / f"{name}.json",
+            Recording(
+                schema_version=2,
+                provenance="provider-recording",
+                model=provider.model,
+                recorded_at=recorded_at,
+                responses=capture.responses[name],
+            ),
+            (provider.api_key,),
+        )
+        status[name] = "written" if isinstance(written, Ok) else f"not written: {written.error}"
+    return status
+
+
 async def benchmark(
     root: Path,
     output: Path,
@@ -352,16 +402,27 @@ async def benchmark(
     max_tokens: int = 2_500_000,
     thresholds: Path | None = None,
     local: DecisionModel | None = None,
+    record_at: datetime | None = None,
 ) -> DecisionReport:
     """Measure the selected adapters on the recorded questions and apply the accuracy gate.
 
     `local` replaces the offline adapter, so a test can degrade it; `thresholds` defaults to the
-    regression floors stored next to the dataset.
+    regression floors stored next to the dataset. A live run given `record_at` also keeps each
+    selected remote provider's responses as `decision-replay/<provider>.json`, stamped with that
+    instant, but only for a provider whose every question was answered: a recording must cover
+    everything the offline benchmark replays.
     """
     if not providers or len(set(providers)) != len(providers) or set(providers) - set(PROVIDERS):
         raise ValueError("Select one or more distinct providers: local, jev, llm.")
     if not max_cost.is_finite() or max_cost <= 0 or max_tokens <= 0:
         raise ValueError("Positive finite comparison budgets are required.")
+    if record_at is not None:
+        if not live:
+            raise ValueError("Recording provider responses requires a live run.")
+        if set(providers) == {"local"}:
+            raise ValueError("Recording needs a remote provider (jev or llm).")
+        if record_at.tzinfo is None:
+            raise ValueError("Recording needs a timezone-aware instant.")
     floors = (
         load_decision_thresholds(thresholds or root / THRESHOLDS_FILE)
         if "local" in providers
@@ -377,8 +438,16 @@ async def benchmark(
     measured_at = datetime.now(UTC).isoformat()
     charged = Usage()
     all_rows: dict[str, list[DecisionMeasurement]] = {}
+    configured = {
+        name: settings(name, live, replay.recordings[name] if replay else None) for name in remote
+    }
+    capture = (
+        RecordingTransport(provider_transport(), {n: c.url for n, c in configured.items()})
+        if record_at
+        else None
+    )
     async with httpx.AsyncClient(
-        trust_env=False, transport=httpx.MockTransport(replay.handle) if replay else None
+        trust_env=False, transport=httpx.MockTransport(replay.handle) if replay else capture
     ) as client:
         # Validate every selected provider before making the first billable call.
         models: dict[str, DecisionModel] = {}
@@ -388,11 +457,10 @@ async def benchmark(
                     RiskBridge(LocalRiskModel.load_default())
                 )
                 continue
-            configured = settings(name, live, replay.recordings[name] if replay else None)
             if name == "jev":
-                models[name] = JevDecisionModel(client, configured)
+                models[name] = JevDecisionModel(client, configured[name])
             else:
-                models[name] = LlmDecisionModel(HttpLanguageModel(client, configured))
+                models[name] = LlmDecisionModel(HttpLanguageModel(client, configured[name]))
         for name, model in models.items():
             if name == "local":
                 provenance[name] = "measured local policy; tabular risk evaluated separately"
@@ -465,6 +533,11 @@ async def benchmark(
                 purpose: summarize(tuple(r for r in rows if r.purpose == purpose))
                 for purpose in sorted({r.purpose for r in rows})
             }
+    recordings = (
+        save_recordings(root / "decision-replay", capture, record_at, configured, all_rows)
+        if capture and record_at
+        else {}
+    )
     violations = (
         accuracy_violations(
             {purpose: float(metric["accuracy"]) for purpose, metric in adapters["local"].items()},
@@ -477,12 +550,15 @@ async def benchmark(
         "live" if live else "offline",
         load_suite(root).sha256,
         load_suite(root / CURRENT_PROFILE.subdirectory).sha256,
-        all(r.error is None for rows in all_rows.values() for r in rows) and not violations,
+        all(r.error is None for rows in all_rows.values() for r in rows)
+        and not violations
+        and all(status == "written" for status in recordings.values()),
         adapters,
         provenance,
         measured_at,
         observed_models,
         violations,
+        recordings,
     )
     output.mkdir(parents=True, exist_ok=True)
     (output / "decisions.json").write_bytes(TypeAdapter(DecisionReport).dump_json(report, indent=2))
@@ -565,6 +641,16 @@ async def benchmark(
             if floors is not None
             else []
         ),
+        *(
+            [
+                "Recordings for offline replay: "
+                + "; ".join(f"{name}: {status}" for name, status in recordings.items())
+                + ".",
+                "",
+            ]
+            if recordings
+            else []
+        ),
         "| Adapter | Provenance | Decision | N | Accuracy | ECE | p50 / p95 ms | "
         "USD / case | Errors |",
         "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
@@ -589,6 +675,12 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=Path("build/evals"))
     parser.add_argument("--live", action="store_true")
     parser.add_argument(
+        "--record",
+        action="store_true",
+        help="With --live, keep the successful provider responses as "
+        "DATASET/decision-replay/PROVIDER.json so CI can replay them without a key.",
+    )
+    parser.add_argument(
         "--providers",
         nargs="+",
         choices=PROVIDERS,
@@ -608,6 +700,10 @@ def main() -> None:
         help="Regenerate the synthetic protocol fixtures in DATASET/decision-replay and stop.",
     )
     args = parser.parse_args()
+    if args.record and not args.live:
+        parser.error("--record requires --live.")
+    if args.record and not set(args.providers) & {"jev", "llm"}:
+        parser.error("--record needs a remote provider (jev or llm) in --providers.")
     if args.write_synthetic_fixtures:
         asyncio.run(write_synthetic_fixtures(args.dataset))
         print(f"Wrote synthetic protocol fixtures to {args.dataset / 'decision-replay'}.")
@@ -622,6 +718,7 @@ def main() -> None:
                 max_cost=args.max_cost,
                 max_tokens=args.max_tokens,
                 thresholds=args.thresholds,
+                record_at=datetime.now(UTC) if args.record else None,
             )
         )
     except (OSError, ValueError) as error:
@@ -629,6 +726,11 @@ def main() -> None:
     print(f"{'PASS' if result.passed else 'FAIL'}: typed decision comparison ({result.mode}).")
     for violation in result.gate_violations:
         print(f"Accuracy gate: {violation}")
+    for name, status in result.recordings.items():
+        if status == "written":
+            print(f"Recording {name}: written to {args.dataset / 'decision-replay' / name}.json")
+        else:
+            print(f"Recording {name}: {status}", file=sys.stderr)
     raise SystemExit(0 if result.passed else 1)
 
 
