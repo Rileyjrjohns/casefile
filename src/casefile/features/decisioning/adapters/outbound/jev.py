@@ -76,7 +76,8 @@ class JevDecisionModel:
         return quote(self.body(question), self.settings)
 
     async def _call(self, question: Question) -> Answer:
-        # A singleton route is already determined; Jev requires at least two choice options.
+        # A single remaining option is already determined, so skip the paid call; the Jev API itself
+        # accepts one option (criteria need only one property).
         if question.operation == "choose" and len(question.options) == 1:
             return AnswerDocument(
                 value=question.options[0], confidence=1, probabilities=[1.0]

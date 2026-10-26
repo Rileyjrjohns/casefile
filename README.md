@@ -54,7 +54,9 @@ See the [provider setup](docs/decisions.md#local-environment-file).
 
 API documentation: http://localhost:8000/docs. Streamable HTTP MCP:
 http://localhost:8000/mcp/. Ports bind only to loopback. This is a local demo
-with a fixed fictional reviewer, **not production authentication**.
+with a fixed fictional reviewer and no user authentication: the demo API accepts a
+review with `confirmed: true` from any caller that can reach it. It is **not
+production authentication**.
 
 ## Architecture
 
@@ -81,9 +83,12 @@ flowchart LR
 ```
 
 Each feature owns `domain`, `application` and inbound/outbound `adapters`.
-Five import contracts enforce feature independence, inward dependencies,
+Six import contracts enforce feature independence, inward dependencies,
 independent adapters and standard-library-only core code, including imports under
-`TYPE_CHECKING`. Only `bootstrap` connects features through ports.
+`TYPE_CHECKING`. A dedicated contract keeps I/O standard-library modules (`socket`,
+`subprocess`, `urllib`, `http`, `sqlite3` and similar) out of `domain`, `application`
+and `shared` ([ADR 0027](docs/adr/0027-no-io-standard-library-in-core-layers.md)).
+Only `bootstrap` connects features through ports.
 
 Runs follow `PENDING → GATHERING → ANALYZING → AWAITING_REVIEW → CLOSED`.
 Immutable `Result` values represent business errors; technical failures raise
@@ -129,8 +134,12 @@ The standalone stdio server has an isolated in-memory demo. The Compose HTTP
 endpoint shares persisted state with the screen. Tools: `list_cases`, `get_case`,
 `start_investigation`, `get_run_trace`, `submit_review`. Resources:
 `case://{id}`, `run://{id}`. Prompt: `triage_case`.
-Review requires human elicitation; a client argument `confirmed: true` alone
-cannot approve it. See [interfaces](docs/interfaces.md) and `make mcp-inspect`.
+Review requires an explicit action for every conclusion and a confirmation.
+`submit_review` asks for that confirmation through MCP elicitation and rejects a
+bare `confirmed: true` argument. The server cannot prove that a human answered:
+a client whose elicitation callback auto-accepts can still submit a review, so
+connect only trusted clients. See [interfaces](docs/interfaces.md),
+[the threat model](docs/threat-model.md) and `make mcp-inspect`.
 
 ## Evaluations
 
@@ -295,7 +304,7 @@ Docker Desktop may require `DOCKER_HOST` set to its socket and
 | httpx | Provider-neutral HTTP and offline contract transports |
 | PyTorch + scikit-learn + NumPy | Deterministic tabular model and baseline |
 | React + Vite + strict TypeScript | One focused review screen and static deployment |
-| Vitest + Testing Library; Playwright | Review interaction tests and browser validation |
+| Vitest + Testing Library | Review interaction tests in jsdom (no real-browser end-to-end suite) |
 | OpenTelemetry | Run/call spans without evidence or credentials in logs |
 | Ruff, mypy, import-linter, Hypothesis, Testcontainers | Formatting, typing, boundaries, invariants and persistence contracts |
 

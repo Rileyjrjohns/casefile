@@ -29,7 +29,10 @@ Review payloads contain `expected_revision`, `decision`, `confirmed` and
 `conclusions`. Each conclusion has `conclusion_id`, `action` (`validate`,
 `correct`, `reject`), optional `corrected_statement` and `reason`. Every
 conclusion must occur exactly once. Corrections require replacement text and a reason;
-rejections require a reason. Missing confirmation returns 422; stale revisions
+rejections require a reason. Review therefore requires an explicit action for every
+conclusion plus confirmation. The HTTP API accepts `confirmed: true` from any caller
+and attributes the review to the fixed demo reviewer: it has no authentication, so the
+flag proves nothing about who sent it. Missing confirmation returns 422; stale revisions
 or already closed runs return 409. Review and closure commit atomically.
 Correction promotion stores separate curator candidates, not golden-file edits.
 
@@ -48,7 +51,10 @@ requires a bearer token except on `/health`. This is a local access gate, not
 user authentication. The static UI does not collect tokens. Host names are
 restricted to loopback and foreign-Origin writes are rejected. Nginx limits
 bodies to 128 KiB, adds a restrictive CSP and proxies same-origin `/api/` requests.
-Direct API deployments need equivalent proxy limits.
+The API itself refuses bodies above 1 MiB with 413 (`payload_too_large`) and answers
+validation failures with 422 listing only each error's location and type, never the
+submitted values; client-chosen key names longer than 64 characters are replaced by a
+placeholder and at most 32 errors are listed. Direct API deployments still need equivalent proxy limits.
 
 ## MCP
 
@@ -77,8 +83,11 @@ ID. Changed, expired, unsolicited and replayed responses are rejected. The final
 command rechecks access and revision. Pending tokens are process-local, capped
 at 100, and invalidated by restart. SDK clients handle the exchange automatically.
 
-A dishonest client could falsely claim that a human confirmed. Trusted client UI
-and authenticated reviewer identity remain prerequisites for real deployment.
+The server requests human confirmation through elicitation and rejects a bare
+`confirmed` flag, but it cannot prove that a human answered. A client whose
+elicitation callback auto-accepts can submit a review (the in-process tests do
+exactly that), so connect only trusted clients. Trusted client UI and an
+authenticated reviewer identity remain prerequisites for real deployment.
 Tests cover denial, acceptance, altered submissions, token replay and non-boolean
 confirmation in modern and legacy sessions.
 
