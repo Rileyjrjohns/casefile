@@ -34,7 +34,6 @@ stateDiagram-v2
     GATHERING --> FAILED: fail / budget exceeded
     ANALYZING --> FAILED: fail / budget exceeded
     AWAITING_REVIEW --> FAILED: fail
-    CLOSED --> FAILED: fail / decision retained
 ```
 
 Business methods are explicit; no generic public transition allows the state
@@ -43,9 +42,10 @@ for the same run, covering exactly its conclusion identifiers. The human
 recommendation may differ from the analysis recommendation.
 
 `FAILED` denotes an unsuccessful stop, without an automatic closure decision.
-Under the rule allowing `FAILED` from every state, an already closed run may be
-marked as failed, but its human decision is retained. Repeating `fail` on a
-failed run preserves the first cause. An empty reason is rejected.
+It is reachable from every non-terminal state; `CLOSED` is terminal and `fail`
+on a closed run returns `INVALID_TRANSITION` ([ADR 026](./0026-closed-is-terminal-and-bootstrap-scope.md)).
+Repeating `fail` on a failed run preserves the first cause. An empty reason is
+rejected.
 
 ### Sources and budget
 

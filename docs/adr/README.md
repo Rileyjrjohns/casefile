@@ -25,3 +25,4 @@
 - [0023-separate-current-policy-evaluation-suite](./0023-separate-current-policy-evaluation-suite.md)
 - [0024-two-language-model-ports-and-the-meaning-of-local](./0024-two-language-model-ports-and-the-meaning-of-local.md)
 - [0025-benchmark-questions-recorded-from-agent-runs](./0025-benchmark-questions-recorded-from-agent-runs.md)
+- [0026-closed-is-terminal-and-bootstrap-scope](./0026-closed-is-terminal-and-bootstrap-scope.md)
