@@ -119,3 +119,32 @@ def test_negated_escalation_is_accepted_for_a_close_recommendation() -> None:
         "There is nothing to escalate.",
     ):
         assert summary_contradictions(summary, CLOSE, ()) == ()
+
+
+@pytest.mark.parametrize(
+    ("recommendation", "signals", "summary", "reason"),
+    [
+        (
+            ESCALATE,
+            (),
+            "Two records were reviewed. Recommend closing the case.",
+            "it recommends closing the case but the recommendation is escalate",
+        ),
+        (
+            CLOSE,
+            (),
+            "Two records were reviewed. The case must be escalated.",
+            "it recommends escalation but the recommendation is close",
+        ),
+        (
+            ESCALATE,
+            (VOLUME,),
+            "Two records were reviewed. There are no concerns.",
+            "it claims no concern while 1 concern signal(s) exist",
+        ),
+    ],
+)
+def test_one_contradicting_sentence_among_consistent_ones_is_enough(
+    recommendation: Recommendation, signals: tuple[Signal, ...], summary: str, reason: str
+) -> None:
+    assert summary_contradictions(summary, recommendation, signals) == (reason,)
