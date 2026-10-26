@@ -235,9 +235,19 @@ The signal row exposes a limitation of the fixed support policy: neutral 0.5 sco
 count as positives at the benchmark boundary. The priority row exposes that the demo
 policy does not mark `sanctions_identity_review` alerts high. Injection labels come
 from the case expectations, which were written knowing the demo pattern set, and
-consistency rows only check drift. The benchmark's offline Jev and LLM rows are
-synthetic protocol fixtures derived from this policy, so they equal the local rows by
-construction; real Jev recordings require your own API key and were not recorded.
+consistency rows only check drift. The benchmark's offline Jev rows replay a genuine
+`jev-1.14.0` recording of the same 2,617 questions (2026-10-26, about USD 0.05):
+
+| Decision | Local demo policy | Jev 1.14.0 (recorded) |
+| --- | ---: | ---: |
+| Signal support | 0.582 | 0.979 |
+| Priority | 0.889 | 0.990 |
+| Recommendation | 1.000 | 0.949 |
+| Guard, injection, alert type, tool route | 1.000 | 1.000 |
+
+These are agreement rates with synthetic labels written for the demo policy, measured
+once, not fraud accuracy or a vendor ranking. The offline LLM rows remain synthetic
+fixtures derived from the demo policy.
 `evals/decision-thresholds.toml` sets per-purpose accuracy floors for `local`
 that fail `make eval` on a regression; they record these measurements and are not
 quality targets. Latencies are local wall time and vary by machine.

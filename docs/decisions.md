@@ -224,9 +224,12 @@ transport matches requests exactly and has no network fallback. Because they der
 from the local policy, the local, Jev and LLM rows of an offline run are identical
 by construction. They test the adapters' protocol handling and nothing about vendor
 performance: accuracy and ECE test the fixtures, latency is local and cost is zero.
-**Real Jev recordings require your own API key and have not been recorded yet**:
-[`make record-decisions-jev`](#recording-genuine-provider-answers) produces them,
-and `make eval-decisions-live` measures a provider without keeping its answers. CI
+`evals/decision-replay/jev.json` is a **genuine recording** of `jev-1.14.0` on the
+2,617 recorded questions (2026-10-26, about USD 0.05 billed);
+`evals/decision-replay/llm.json` remains synthetic.
+[`make record-decisions-jev`](#recording-genuine-provider-answers) refreshes the Jev
+recording with your own key, and `make eval-decisions-live` measures a provider
+without keeping its answers. CI
 gates successful contracts and the local accuracy floors; structural evals
 separately enforce their strict thresholds.
 
