@@ -8,6 +8,7 @@ class EvaluationErrorCode(StrEnum):
     NOT_A_CORRECTION = "not_a_correction"
     INVALID_REFERENCE = "invalid_reference"
     REFERENCE_ID_CONFLICT = "reference_id_conflict"
+    UNLABELLED_REQUEST = "unlabelled_request"
 
 
 @dataclass(frozen=True, slots=True)
