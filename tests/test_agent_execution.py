@@ -1,6 +1,6 @@
 """Execution contracts: typed decision validation, guard threshold, evidence identity, replay."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import replace
 from datetime import timedelta
 
@@ -18,7 +18,10 @@ from casefile.features.investigation.adapters.outbound.tools.seed import load_se
 from casefile.features.investigation.application.agent import InvestigationAgent, _Execution
 from casefile.features.investigation.application.agent_types import (
     EvidenceBatch,
+    EvidenceGateway,
     ExecutionSnapshot,
+    InvestigationContext,
+    LanguageModel,
     Signal,
     SourceLink,
     TraceEvent,
@@ -29,6 +32,7 @@ from casefile.features.investigation.application.decisions import (
     DecisionResponse,
     state_json,
 )
+from casefile.features.investigation.application.findings_policy import CURRENT_FINDINGS
 from casefile.features.investigation.application.jobs import JobLease
 from casefile.features.investigation.application.tools import InvalidToolQuery, ToolName
 from casefile.features.investigation.application.worker import RunWorker
@@ -47,31 +51,42 @@ INVALID = "Decision provider returned an invalid typed answer."
 class OverridingDecisions:
     """The demonstration decision policy with selected answers replaced by the test."""
 
-    def __init__(self, override: Override) -> None:
+    def __init__(self, override: Override | None = None) -> None:
         self.inner = demo_decisions()
-        self.override = override
+        self.override = override or (lambda _, response: response)
+        self.requests: list[DecisionRequest] = []
 
     def quote(self, request: DecisionRequest) -> BudgetUsage:
         return self.inner.quote(request)
 
     async def execute(self, request: DecisionRequest) -> DecisionResponse:
+        self.requests.append(request)
         return self.override(request, await self.inner.execute(request))
 
 
 def agent_for(
     app: MemoryApplication,
     decisions: DecisionGateway,
-    tools: TypedEvidenceGateway | None = None,
+    tools: EvidenceGateway | None = None,
+    *,
+    model: LanguageModel | None = None,
+    contexts: InvestigationContext | None = None,
+    risk_enabled: bool = False,
+    alternative_models: Mapping[str, LanguageModel] | None = None,
+    findings_policy: str = CURRENT_FINDINGS,
 ) -> InvestigationAgent:
     return InvestigationAgent(
         app.journal,
-        StoredInvestigationContext(app.cases),
+        contexts or StoredInvestigationContext(app.cases),
         tools or TypedEvidenceGateway(MemoryInvestigationTools(load_seed())),
-        FakeLanguageModel(),
+        model or FakeLanguageModel(),
         AgentJsonCodec(),
         FixedClock(),
         MemoryTelemetry(),
         decisions,
+        risk_enabled=risk_enabled,
+        alternative_models=alternative_models or {},
+        findings_policy=findings_policy,
     )
 
 
