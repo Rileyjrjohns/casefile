@@ -146,8 +146,9 @@ Signal selection, confidence and recommendations still come from deterministic
 rules. Live mode measures whether a narrative model preserves their structured
 constraints; it does not turn these metrics into model decision accuracy.
 Neither text quality, confidence calibration, identity resolution nor unseen
-injection variants are scored here. The current injection rule recognizes one
-literal phrase. Human review remains necessary for narrative truthfulness.
+injection variants are scored here. The current injection rule is a normalized
+pattern set; the frozen cases exercise only its original phrase. Human review
+remains necessary for narrative truthfulness.
 
 Replay fixture cost is zero and its token counters are synthetic. Its latency
 is local orchestration time and cannot estimate production model latency.

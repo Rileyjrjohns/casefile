@@ -92,6 +92,12 @@ registration and budget accounting. Completed calls are reused on retry; unknown
 external outcomes stop the run. Tools, narrative generation and typed decisions
 support exact replay, including failures and budget reservations.
 
+The narrative model writes only the summary. Conclusion text always comes from the
+approved signals, and a heuristic backstop fails a run whose summary contradicts
+the recommendation or denies existing concerns. The demo injection check is a
+pattern set, not a general detector, and human review remains the final control
+([ADR 022](docs/adr/0022-deterministic-conclusion-text-and-summary-backstop.md)).
+
 ## API and MCP
 
 Both interfaces call the same application commands and queries.
@@ -182,12 +188,14 @@ Local-policy measurement excerpt (one offline run on the 30-case corpus):
 | Decision | Questions | Accuracy | ECE | p50 / p95 ms | USD / case |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Recommendation | 30 | 1.000 | 0.000 | 0.008 / 0.009 | 0 |
-| Injection, one known phrase | 30 | 1.000 | 0.000 | 0.009 / 0.012 | 0 |
+| Injection, demo pattern set | 30 | 1.000 | 0.000 | 0.009 / 0.012 | 0 |
 | Signal support, including negative controls | 54 | 0.444 | 0.391 | 0.008 / 0.009 | 0 |
 
 The negative controls expose a limitation of the fixed support policy: neutral
 0.5 scores count as positives at the benchmark boundary. This policy is not a
-general evidence classifier. Latencies are local wall time and vary by machine.
+general evidence classifier. Injection labels come from the same pattern set the
+local policy uses, so that row checks consistency, not detection quality.
+Latencies are local wall time and vary by machine.
 
 The risk model uses 6,000 seeded synthetic transactions and a 3,600/1,200/1,200
 train/validation/test split:

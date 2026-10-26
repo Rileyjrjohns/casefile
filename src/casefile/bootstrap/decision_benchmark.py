@@ -23,6 +23,7 @@ from casefile.features.decisioning.adapters.outbound.local import LocalDecisionM
 from casefile.features.decisioning.adapters.outbound.wire import DecisionSettings
 from casefile.features.decisioning.application.ports import DecisionModel
 from casefile.features.decisioning.domain.decisions import Answer, Question, Usage
+from casefile.features.decisioning.domain.injection import looks_like_instruction
 from casefile.features.evaluation.adapters.outbound.golden import load_suite
 from casefile.features.evaluation.domain.decision_metrics import DecisionMeasurement, summarize
 from casefile.features.investigation.adapters.outbound.agent.codec import AgentJsonCodec
@@ -105,8 +106,7 @@ def probes(root: Path) -> tuple[Probe, ...]:
         injections = frozenset(
             r.record_id
             for r in records
-            if isinstance(r, InvestigatorNote)
-            and "ignore previous instructions" in r.text.casefold()
+            if isinstance(r, InvestigatorNote) and looks_like_instruction(r.text)
         )
         facts = candidates(batches, injections, policy_version="findings-v1")
         base: dict[str, object] = {

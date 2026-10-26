@@ -4,8 +4,13 @@
   detection, identity resolution or compliance effectiveness is established.
 - The local reviewer identity is fixed. An optional bearer gate is not a complete
   authentication system. A malicious MCP client can fake its human interaction.
-- Demo injection detection recognizes one phrase. Source validation checks
-  provenance and signal membership, not the truth of natural-language claims.
+- Demo injection detection is a normalized pattern set, a heuristic that
+  obfuscated or novel wording can evade; detection by a real model is fallible
+  too. Source validation checks provenance and signal membership, not the truth of
+  natural-language claims. Conclusion text comes from the approved signals, and a
+  phrase-level backstop rejects summaries that contradict the recommendation or
+  deny existing concerns, but the summary remains model-written text that a
+  reworded contradiction can slip past, so human review is still required.
 - The tabular model is calibrated only against its synthetic generator. Runtime
   features use incomplete-window proxies and no currency conversion. It cannot
   perform general language decisions; local routing uses explicit policy.
