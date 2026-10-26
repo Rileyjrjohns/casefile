@@ -149,7 +149,10 @@ class Run(FactoryOnly):
                     "A run cannot close without a human decision.",
                 )
             )
-        assert self.analysis is not None  # Established only by submit_analysis.
+        if self.analysis is None:
+            # submit_analysis is the only way to reach AWAITING_REVIEW; a snapshot without an
+            # analysis is corrupt and must not close.
+            return self._invalid_transition("close without an analysis")
         if decision.run_id != self.id or set(decision.conclusion_ids) != {
             item.id for item in self.analysis.conclusions
         }:
@@ -162,6 +165,7 @@ class Run(FactoryOnly):
         return Ok(self._evolve(state=RunState.CLOSED, human_decision=decision))
 
     def fail(self, reason: str) -> Result["Run", InvestigationError]:
+        """Fail from any non-terminal state; CLOSED is terminal and FAILED keeps its first cause."""
         if not reason.strip():
             return Err(
                 InvestigationError(
@@ -169,6 +173,8 @@ class Run(FactoryOnly):
                     "A failed run must retain a nonempty reason.",
                 )
             )
+        if self.state == RunState.CLOSED:
+            return self._invalid_transition("fail")
         if self.state == RunState.FAILED:
             return Ok(self)
         return Ok(self._evolve(state=RunState.FAILED, failure_reason=reason))

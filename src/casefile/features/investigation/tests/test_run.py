@@ -55,7 +55,10 @@ def test_transition_matrix(state: RunState, action: str) -> None:
             result = run.close(decision())
         case _:
             result = run.fail("Storage failure")
-    if action == "fail":
+    if action == "fail" and state == RunState.CLOSED:
+        assert isinstance(result, Err)
+        assert result.error.code == InvestigationErrorCode.INVALID_TRANSITION
+    elif action == "fail":
         assert value(result).state == RunState.FAILED
         assert value(result).failure_reason
         assert value(result).human_decision == run.human_decision
@@ -101,6 +104,24 @@ def test_close_requires_a_human_decision_for_the_same_run_and_all_conclusions() 
         assert isinstance(run.close(receipt), Err)
     assert value(run.close(decision())).human_decision == decision()
     assert run.state == RunState.AWAITING_REVIEW
+
+
+def test_close_without_an_analysis_is_an_explicit_error_not_an_assertion() -> None:
+    # A snapshot that reached AWAITING_REVIEW without an analysis can only come from corrupt
+    # storage; it must fail closed through Result even when assertions are stripped (python -O).
+    corrupt = run_at(RunState.AWAITING_REVIEW)._evolve(analysis=None)
+    result = corrupt.close(decision())
+    assert isinstance(result, Err)
+    assert result.error.code == InvestigationErrorCode.INVALID_TRANSITION
+    assert corrupt.state == RunState.AWAITING_REVIEW
+
+
+def test_closed_run_is_terminal_and_cannot_fail() -> None:
+    closed = run_at(RunState.CLOSED)
+    result = closed.fail("Late storage failure")
+    assert isinstance(result, Err)
+    assert result.error.code == InvestigationErrorCode.INVALID_TRANSITION
+    assert closed.state == RunState.CLOSED and closed.failure_reason is None
 
 
 @pytest.mark.parametrize("confirmed", [False, True])
@@ -251,3 +272,37 @@ def test_arbitrary_operations_never_close_without_human_review(actions: list[str
             run = result.value
         assert run.state != RunState.CLOSED
         assert run.human_decision is None
+
+
+@given(
+    st.sampled_from(list(RunState)),
+    st.lists(
+        st.sampled_from(["gather", "sources", "analyze", "submit", "close", "fail"]), max_size=40
+    ),
+)
+def test_terminal_states_absorb_every_later_operation(
+    start: RunState, actions: list[str]
+) -> None:
+    run = run_at(start)
+    for action in actions:
+        before = run
+        match action:
+            case "gather":
+                result = run.start_gathering()
+            case "analyze":
+                result = run.start_analysis()
+            case "sources":
+                result = run.record_sources((source(),))
+            case "submit":
+                result = run.submit_analysis(analysis())
+            case "close":
+                result = run.close(decision())
+            case _:
+                result = run.fail("Unavailable")
+        if isinstance(result, Ok):
+            run = result.value
+        if before.state == RunState.CLOSED:
+            assert run == before
+        if before.state == RunState.FAILED:
+            assert run.state == RunState.FAILED
+            assert run.failure_reason == before.failure_reason
