@@ -42,9 +42,11 @@
   sanctions alerts, so `local` scores 0.889 on priority. Its fixed support scores
   also place neutral evidence above the benchmark's 0.5 boundary (signal accuracy
   0.582). The accuracy floors in `evals/decision-thresholds.toml` record these
-  results as regression guards, not as acceptable quality. Offline Jev and LLM
-  rows come from synthetic fixtures derived from the same policy; real Jev
-  recordings need the user's API key and have not been recorded.
+  results as regression guards, not as acceptable quality. Offline Jev rows
+  replay a genuine `jev-1.14.0` recording made on 2026-10-26; they describe that
+  model on synthetic labels at that date, and a repeated identical question keeps
+  its first recorded answer. Offline LLM rows still come from synthetic fixtures
+  derived from the demo policy.
 - Raw decision questions and complete investigations supply different context.
   Reproducing the three injection cases through the API/worker produced two
   escalation recommendations and one request for information. A deterministic

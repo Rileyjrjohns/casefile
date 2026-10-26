@@ -94,7 +94,7 @@ class JevDecisionModel:
             document = AnswerDocument(
                 value=result.choice,
                 confidence=result.confidence,
-                probabilities=[result.probabilities[o] for o in question.options],
+                probabilities=renormalized([result.probabilities[o] for o in question.options]),
             )
         elif isinstance(result, Probability) and question.operation == "probability":
             document = AnswerDocument(
@@ -106,10 +106,15 @@ class JevDecisionModel:
                 enumerate_strings(question.options)
             ):
                 raise ValueError("Jev changed the requested rubric.")
+            probabilities = renormalized(
+                [result.probabilities[str(i)] for i in range(len(question.options))]
+            )
+            position = sum(i * p for i, p in enumerate(probabilities))
+            # The reported score derives from unrounded probabilities; each level may move it.
+            if abs(result.score - position) > ROUNDING_STEP * len(probabilities) ** 2:
+                raise ValueError("Jev returned a score inconsistent with its distribution.")
             document = AnswerDocument(
-                value=result.score,
-                confidence=result.confidence,
-                probabilities=[result.probabilities[str(i)] for i in range(len(question.options))],
+                value=position, confidence=result.confidence, probabilities=probabilities
             )
         else:
             raise ValueError("Jev returned a different decision operation.")
@@ -127,6 +132,17 @@ class JevDecisionModel:
 
     async def score(self, question: Question) -> Answer:
         return await self._call(question)
+
+
+ROUNDING_STEP = 0.005  # Jev reports probabilities to two decimals.
+
+
+def renormalized(probabilities: list[float]) -> list[float]:
+    """Absorb two-decimal rounding drift; a larger gap is a malformed distribution."""
+    total = sum(probabilities)
+    if total <= 0 or abs(total - 1) > ROUNDING_STEP * len(probabilities) + 1e-9:
+        raise ValueError("Jev returned a distribution beyond rounding drift.")
+    return [p / total for p in probabilities]
 
 
 def enumerate_strings(options: tuple[str, ...]) -> tuple[tuple[str, str], ...]:
