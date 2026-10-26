@@ -64,6 +64,11 @@ DECISION_MAX_TOKENS ?= 2500000
 eval-decisions-live:
 	$(ENV_RUN) casefile-decisions --live --providers $(DECISION_PROVIDERS) --max-cost $(DECISION_MAX_COST) --max-tokens $(DECISION_MAX_TOKENS) --output $(EVAL_OUTPUT)
 
+# Bills your Jev key: replaces evals/decision-replay/jev.json with the real answers, replayed by CI.
+.PHONY: record-decisions-jev
+record-decisions-jev:
+	$(ENV_RUN) casefile-decisions --live --record --providers local jev --max-cost $(DECISION_MAX_COST) --max-tokens $(DECISION_MAX_TOKENS) --output $(EVAL_OUTPUT)
+
 .PHONY: web-sync web-check serve mcp-inspect
 web-sync:
 	cd web && $(NPM) ci
