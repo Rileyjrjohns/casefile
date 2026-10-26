@@ -213,9 +213,12 @@ narrative truthfulness.
 Replay fixture cost is zero and its token counters are synthetic. Its latency
 is local orchestration time and cannot estimate production model latency.
 PostgreSQL and MCP performance are outside this in-memory benchmark. The separate [typed adapter comparison](decisions.md) adds per-purpose accuracy,
-calibration, latency and cost. Its offline provider fixtures have explicit
-synthetic provenance. `make eval` runs both reports; its second gate requires
-all typed adapter contract calls to succeed.
+calibration, latency and cost on the decision requests the agent sends while
+running both suites. Its offline provider fixtures have explicit synthetic
+provenance. `make eval` runs both reports; its second gate requires all typed
+adapter contract calls to succeed and the offline `local` adapter to stay at or
+above the per-purpose accuracy floors in `evals/decision-thresholds.toml`, which
+are regression guards and not quality targets.
 
 See [ADR 011](adr/0011-replay-evaluation-baselines.md) for the boundary and
 baseline decisions.

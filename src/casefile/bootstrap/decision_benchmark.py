@@ -14,8 +14,14 @@ from typing import Literal
 import httpx
 from pydantic import BaseModel, ConfigDict, JsonValue, TypeAdapter
 
-from casefile.bootstrap.decisions import RiskBridge, require
-from casefile.bootstrap.evaluations import ScenarioDocument
+from casefile.bootstrap.decisions import RiskBridge, demo_decisions, require
+from casefile.bootstrap.evaluations import (
+    CURRENT_PROFILE,
+    LEGACY_PROFILE,
+    AgentCaseRunner,
+    EvaluationProfile,
+    ScenarioDocument,
+)
 from casefile.features.decisioning.adapters.outbound.fake import FakeDecisionModel
 from casefile.features.decisioning.adapters.outbound.jev import JevDecisionModel
 from casefile.features.decisioning.adapters.outbound.llm import HttpLanguageModel, LlmDecisionModel
@@ -23,57 +29,111 @@ from casefile.features.decisioning.adapters.outbound.local import LocalDecisionM
 from casefile.features.decisioning.adapters.outbound.wire import DecisionSettings
 from casefile.features.decisioning.application.ports import DecisionModel
 from casefile.features.decisioning.domain.decisions import Answer, Question, Usage
-from casefile.features.decisioning.domain.injection import looks_like_instruction
+from casefile.features.evaluation.adapters.outbound.decision_thresholds import (
+    load_decision_thresholds,
+)
 from casefile.features.evaluation.adapters.outbound.golden import load_suite
-from casefile.features.evaluation.domain.decision_metrics import DecisionMeasurement, summarize
+from casefile.features.evaluation.application.benchmark import BenchmarkCase
+from casefile.features.evaluation.domain.decision_metrics import (
+    DecisionMeasurement,
+    accuracy_violations,
+    summarize,
+)
+from casefile.features.evaluation.domain.decision_questions import (
+    Basis,
+    CaseFacts,
+    LabelledRequest,
+    RecordedRequest,
+    label_requests,
+    unsupported_claim_control,
+)
+from casefile.features.evaluation.domain.errors import EvaluationError
 from casefile.features.investigation.adapters.outbound.agent.codec import AgentJsonCodec
-from casefile.features.investigation.application.agent_policy import candidates
 from casefile.features.investigation.application.agent_types import CaseContext, EvidenceBatch
 from casefile.features.investigation.application.banking_policy import BANKING_KINDS
-from casefile.features.investigation.application.decisions import state_json
-from casefile.features.investigation.application.guard_policy import guard_state
-from casefile.features.investigation.application.tools import (
-    InvestigatorNote,
-    KycProfile,
-    ToolName,
+from casefile.features.investigation.application.decisions import (
+    DecisionGateway,
+    DecisionRequest,
+    DecisionResponse,
+    state_json,
 )
+from casefile.features.investigation.application.guard_policy import guard_state
+from casefile.features.investigation.application.tools import ToolName
+from casefile.features.investigation.domain.budget import BudgetUsage
 from casefile.features.risk_scoring.adapters.outbound.local import LocalRiskModel
+from casefile.shared.result import Err, Result
 
 PROVIDERS = ("local", "jev", "llm")
+THRESHOLDS_FILE = "decision-thresholds.toml"
 
 
 @dataclass(frozen=True, slots=True)
 class Probe:
+    """A frozen question and its label.
+
+    `origin` separates what the agent really sent from the synthetic negatives that are added
+    next to it; `basis` says how independent of the policy under test the label is.
+    """
+
     case_id: str
+    suite: str
     question: Question
     expected: str | bool
+    basis: Basis
+    origin: Literal["recorded", "negative-control"]
 
 
 @dataclass(frozen=True, slots=True)
 class DecisionReport:
     mode: str
     dataset_sha256: str
+    current_dataset_sha256: str
     passed: bool
     adapters: dict[str, dict[str, dict[str, str | int | float]]]
     provenance: dict[str, str]
     measured_at: str
     models: dict[str, tuple[str, ...]]
+    gate_violations: tuple[str, ...] = ()
 
 
-def guard_probes(
-    case_id: str, context: CaseContext, batches: tuple[EvidenceBatch, ...]
-) -> tuple[Probe, ...]:
-    """Guard questions use the agent's own state builder, so formats cannot drift apart.
+class RecordingDecisions:
+    """Delegates to the demonstration decisions and keeps every request the agent sends."""
 
-    Positives are the states the agent sends for this case's recorded tool calls. Negatives are
-    realistic denials: another customer, an unrelated sanctions name, a tool the workflow does
-    not allow, and a repeated call.
+    def __init__(self, inner: DecisionGateway) -> None:
+        self.inner = inner
+        self.requests: list[DecisionRequest] = []
+
+    def quote(self, request: DecisionRequest) -> BudgetUsage:
+        return self.inner.quote(request)
+
+    async def execute(self, request: DecisionRequest) -> DecisionResponse:
+        self.requests.append(request)
+        return await self.inner.execute(request)
+
+
+def question(row: LabelledRequest) -> Question:
+    return require(Question.create(row.operation, row.purpose, row.state_json, row.options)).value
+
+
+def probe(row: LabelledRequest, origin: Literal["recorded", "negative-control"]) -> Probe:
+    return Probe(row.case_id, row.suite, question(row), row.expected, row.basis, origin)
+
+
+def guard_negatives(
+    facts: CaseFacts, context: CaseContext, batches: tuple[EvidenceBatch, ...]
+) -> tuple[LabelledRequest, ...]:
+    """Realistic denials, built with the agent's own state builder so formats cannot drift apart.
+
+    The positives are not built here: they are the guard states the agent really sent. The
+    negatives are another customer, an unrelated sanctions name, a tool the workflow does not
+    allow, and a repeated call. They share the guard facts with the policy, so agreement on them
+    is a consistency check (ADR 021).
     """
 
-    def probe(tool: ToolName, query: str, seen: tuple[EvidenceBatch, ...], allowed: bool) -> Probe:
+    def row(tool: ToolName, query: str, seen: tuple[EvidenceBatch, ...]) -> LabelledRequest:
         state = state_json(guard_state(tool, query, context, seen))
-        return Probe(
-            case_id, require(Question.create("probability", "guard", state)).value, allowed
+        return LabelledRequest(
+            facts.case_id, facts.suite, "probability", "guard", state, (), False, "consistency"
         )
 
     other = (
@@ -82,124 +142,80 @@ def guard_probes(
     banking = context.kind in BANKING_KINDS
     first = batches[0]
     return (
-        *(probe(b.tool, b.query, batches[:i], True) for i, b in enumerate(batches)),
-        probe(ToolName.TRANSACTIONS, other, (), False),
-        probe(
+        row(ToolName.TRANSACTIONS, other, ()),
+        row(
             ToolName.SANCTIONS,
             "Unrelated Counterparty Ltd",
             tuple(b for b in batches if b.tool != ToolName.SANCTIONS),
-            False,
         ),
-        probe(ToolName.SANCTIONS if banking else ToolName.DOCUMENTS, context.subject_id, (), False),
-        probe(first.tool, first.query, batches[:1], False),
+        row(ToolName.SANCTIONS if banking else ToolName.DOCUMENTS, context.subject_id, ()),
+        row(first.tool, first.query, batches[:1]),
     )
 
 
-def probes(root: Path) -> tuple[Probe, ...]:
-    result: list[Probe] = []
-    codec = AgentJsonCodec()
-    for case in load_suite(root).cases:
-        scenario = ScenarioDocument.model_validate_json(case.scenario_json)
-        context = codec.context(json.dumps(scenario.context))
-        batches = tuple(codec.evidence(json.dumps(b)) for b in scenario.evidence)
-        records = tuple(r for b in batches for r in b.records)
-        injections = frozenset(
-            r.record_id
-            for r in records
-            if isinstance(r, InvestigatorNote) and looks_like_instruction(r.text)
-        )
-        facts = candidates(batches, injections, policy_version="findings-v1")
-        base: dict[str, object] = {
-            "case_id": case.id,
-            "kind": context.kind,
-            "description": context.description,
-            "evidence": scenario.evidence,
-        }
+def recorded_request(request: DecisionRequest) -> RecordedRequest:
+    return RecordedRequest(
+        request.key, request.operation, request.purpose, request.state_json, request.options
+    )
 
-        def add(
-            operation: str,
-            purpose: str,
-            state: dict[str, object],
-            expected: str | bool,
-            options: tuple[str, ...] = (),
-            *,
-            base: dict[str, object] = base,
-            case_id: str = case.id,
-        ) -> None:
-            q = require(
-                Question.create(
-                    operation, purpose, json.dumps({**base, **state}, sort_keys=True), options
-                )
-            ).value
-            result.append(Probe(case_id, q, expected))
 
-        add(
-            "choose",
-            "priority",
-            {},
-            "high" if context.kind == "sanctions_match" else "normal",
-            ("normal", "high"),
-        )
-        add(
-            "choose",
-            "alert_type",
-            {},
-            context.kind,
-            ("unusual_transaction", "sanctions_match", "kyc_inconsistency"),
-        )
-        add(
-            "choose",
-            "tool_route",
-            {"available": ["get_kyc_profile", "list_transactions"]},
-            "get_kyc_profile",
-            ("get_kyc_profile", "list_transactions"),
-        )
-        add(
-            "choose",
-            "model_route",
-            {"signal_count": len(facts)},
-            "primary",
-            ("primary", "conservative"),
-        )
-        result.extend(guard_probes(case.id, context, batches))
-        add(
-            "probability",
-            "injection",
-            {"text": json.dumps(scenario.evidence)},
-            any(s.key.startswith("instruction:") for s in case.expected.signals),
-        )
-        expected_keys = {s.key for s in case.expected.signals}
-        for fact in facts:
-            add(
-                "score",
-                "signal",
-                {"signal_kind": fact.key.split(":")[0], "statement": fact.statement},
-                fact.key in expected_keys,
-                ("unsupported", "fully supported"),
-            )
-        # Negative controls exist independently of whether a case already has positive signals.
-        add(
-            "score",
-            "signal",
-            {
-                "signal_kind": "unsupported",
-                "statement": "This case has a verified criminal conviction; "
-                "no such record is supplied.",
-            },
-            False,
-            ("unsupported", "fully supported"),
-        )
-        add(
-            "choose",
-            "recommendation",
-            {
-                "signal_count": len(facts),
-                "has_profile": any(isinstance(r, KycProfile) for r in records),
-            },
-            case.expected.recommendation,
-            ("close", "escalate", "request_information"),
-        )
-    return tuple(result)
+async def case_probes(
+    profile: EvaluationProfile, case: BenchmarkCase, codec: AgentJsonCodec
+) -> tuple[Probe, ...]:
+    """Run one case through the agent and label every request it sends."""
+    recorder = RecordingDecisions(demo_decisions())
+    observation = await AgentCaseRunner(
+        decisions=recorder, findings_policy=profile.findings_policy
+    ).run(case)
+    if observation.error is not None or not recorder.requests:
+        raise ValueError(f"Case {case.id} did not complete, so its questions cannot be recorded.")
+    scenario = ScenarioDocument.model_validate_json(case.scenario_json)
+    context = codec.context(json.dumps(scenario.context))
+    batches = tuple(codec.evidence(json.dumps(b)) for b in scenario.evidence)
+    facts = CaseFacts(
+        case.id,
+        profile.name,
+        context.kind,
+        case.expected.recommendation,
+        frozenset(s.key for s in case.expected.signals),
+        frozenset(
+            (source.tool, source.record_id)
+            for s in case.expected.signals
+            if s.key.startswith("instruction:")
+            for source in s.sources
+        ),
+        tuple(codec.evidence_json(b) for b in batches),
+    )
+    labelled = label_requests(facts, tuple(recorded_request(r) for r in recorder.requests))
+    return (
+        *(probe(row, "recorded") for row in require_evaluation(labelled)),
+        *(probe(row, "negative-control") for row in guard_negatives(facts, context, batches)),
+        probe(unsupported_claim_control(facts), "negative-control"),
+    )
+
+
+def require_evaluation[T](result: Result[T, EvaluationError]) -> T:
+    if isinstance(result, Err):
+        raise ValueError(result.error.message)
+    return result.value
+
+
+# Recording runs every case of both suites, so a process records each pair of datasets once.
+_RECORDED: dict[tuple[str, str], tuple[Probe, ...]] = {}
+
+
+async def collect_probes(root: Path) -> tuple[Probe, ...]:
+    """Questions of both evaluation suites, recorded from the agent's real runs."""
+    suites = [(p, load_suite(root / p.subdirectory)) for p in (LEGACY_PROFILE, CURRENT_PROFILE)]
+    key = (suites[0][1].sha256, suites[1][1].sha256)
+    if key not in _RECORDED:
+        codec = AgentJsonCodec()
+        probes: list[Probe] = []
+        for profile, suite in suites:
+            for case in suite.cases:
+                probes.extend(await case_probes(profile, case, codec))
+        _RECORDED[key] = tuple(probes)
+    return _RECORDED[key]
 
 
 def canonical(body: object) -> str:
@@ -271,8 +287,8 @@ async def write_synthetic_fixtures(root: Path) -> None:
     async with httpx.AsyncClient(trust_env=False) as client:
         jev = JevDecisionModel(client, settings("jev", False))
         llm = HttpLanguageModel(client, settings("llm", False))
-        for probe in probes(root):
-            q = probe.question
+        for item in await collect_probes(root):
+            q = item.question
             result = await call(fake, q)
             raw: dict[str, JsonValue]
             if q.operation == "probability":
@@ -334,11 +350,24 @@ async def benchmark(
     providers: tuple[str, ...] = PROVIDERS,
     max_cost: Decimal = Decimal("1"),
     max_tokens: int = 2_500_000,
+    thresholds: Path | None = None,
+    local: DecisionModel | None = None,
 ) -> DecisionReport:
+    """Measure the selected adapters on the recorded questions and apply the accuracy gate.
+
+    `local` replaces the offline adapter, so a test can degrade it; `thresholds` defaults to the
+    regression floors stored next to the dataset.
+    """
     if not providers or len(set(providers)) != len(providers) or set(providers) - set(PROVIDERS):
         raise ValueError("Select one or more distinct providers: local, jev, llm.")
     if not max_cost.is_finite() or max_cost <= 0 or max_tokens <= 0:
         raise ValueError("Positive finite comparison budgets are required.")
+    floors = (
+        load_decision_thresholds(thresholds or root / THRESHOLDS_FILE)
+        if "local" in providers
+        else None
+    )
+    probes = await collect_probes(root)
     remote = tuple(name for name in providers if name != "local")
     replay = ReplayTransport(root / "decision-replay", remote) if not live and remote else None
     adapters: dict[str, dict[str, dict[str, str | int | float]]] = {}
@@ -355,7 +384,9 @@ async def benchmark(
         models: dict[str, DecisionModel] = {}
         for name in providers:
             if name == "local":
-                models[name] = LocalDecisionModel(RiskBridge(LocalRiskModel.load_default()))
+                models[name] = local or LocalDecisionModel(
+                    RiskBridge(LocalRiskModel.load_default())
+                )
             elif name == "jev":
                 models[name] = JevDecisionModel(client, settings(name, live))
             else:
@@ -374,9 +405,9 @@ async def benchmark(
             rows: list[DecisionMeasurement] = []
             answers: list[dict[str, object]] = []
             versions: set[str] = set()
-            for probe in probes(root):
+            for item in probes:
                 started = perf_counter()
-                reserved = model.quote(probe.question)
+                reserved = model.quote(item.question)
                 error = None
                 correct, selected = False, 1.0
                 usage = Usage()
@@ -388,25 +419,25 @@ async def benchmark(
                     ):
                         raise ValueError("Comparison budget would be exceeded.")
                     usage = reserved
-                    result = await call(model, probe.question)
+                    result = await call(model, item.question)
                     versions.add(result.model)
                     usage = result.usage
                     if usage.tokens > reserved.tokens or usage.cost > reserved.cost:
                         raise ValueError("Provider exceeded its reservation.")
-                    if probe.question.operation == "choose":
-                        correct = result.value == probe.expected
+                    if item.question.operation == "choose":
+                        correct = result.value == item.expected
                         selected = max(result.probabilities)
                     else:
                         p = float(result.value)
-                        correct = (p >= 0.5) == probe.expected
+                        correct = (p >= 0.5) == item.expected
                         selected = max(p, 1 - p)
                 except Exception as failure:
                     error = type(failure).__name__
                 charged = Usage(charged.tokens + usage.tokens, charged.cost + usage.cost)
                 rows.append(
                     DecisionMeasurement(
-                        probe.case_id,
-                        probe.question.purpose,
+                        item.case_id,
+                        item.question.purpose,
                         correct,
                         selected,
                         (perf_counter() - started) * 1000,
@@ -417,7 +448,10 @@ async def benchmark(
                 answers.append(
                     {
                         **asdict(rows[-1]),
-                        "expected": probe.expected,
+                        "suite": item.suite,
+                        "origin": item.origin,
+                        "basis": item.basis,
+                        "expected": item.expected,
                         "value": result.value if result else None,
                         "model": result.model if result else None,
                     }
@@ -429,14 +463,24 @@ async def benchmark(
                 purpose: summarize(tuple(r for r in rows if r.purpose == purpose))
                 for purpose in sorted({r.purpose for r in rows})
             }
+    violations = (
+        accuracy_violations(
+            {purpose: float(metric["accuracy"]) for purpose, metric in adapters["local"].items()},
+            floors,
+        )
+        if floors is not None
+        else ()
+    )
     report = DecisionReport(
         "live" if live else "offline",
         load_suite(root).sha256,
-        all(r.error is None for rows in all_rows.values() for r in rows),
+        load_suite(root / CURRENT_PROFILE.subdirectory).sha256,
+        all(r.error is None for rows in all_rows.values() for r in rows) and not violations,
         adapters,
         provenance,
         measured_at,
         observed_models,
+        violations,
     )
     output.mkdir(parents=True, exist_ok=True)
     (output / "decisions.json").write_bytes(TypeAdapter(DecisionReport).dump_json(report, indent=2))
@@ -451,7 +495,8 @@ async def benchmark(
     lines = [
         "# Typed decision comparison",
         "",
-        f"Mode: **{report.mode}**. Dataset: `{report.dataset_sha256}`.",
+        f"Mode: **{report.mode}**. Datasets: `{report.dataset_sha256}` (findings-v1) and "
+        f"`{report.current_dataset_sha256}` (current policy).",
         f"Measured at: `{report.measured_at}`.",
         "Observed models: "
         + "; ".join(
@@ -465,14 +510,40 @@ async def benchmark(
         "separately configured providers. Local rows measure the explicit policy; tabular "
         "risk has a separate held-out dataset.",
         "",
-        "Identical questions are extracted from the 30 frozen cases. Operational labels encode "
-        "demonstration policy; investigation labels come from the reference analyses. ECE uses "
-        "ten bins of selected-outcome probability (not provider certainty). Signal scores are "
-        "thresholded at 0.5 and include unsupported-claim controls. Guard rows pair the exact "
-        "states the agent sends with synthetic denials (other customer, unrelated sanctions name, "
-        "disallowed tool, repeated call). These are narrow, correlated "
-        "synthetic examples pending independent human review.",
+        "Identical questions are the decision requests the agent really sent while running "
+        "every case of both suites (the 30 findings-v1 regression cases and the current-policy "
+        "cases) under the demonstration decisions, tabular risk excluded. Each adapter receives "
+        "the same sequence, whatever its own upstream answers would have been. ECE uses ten bins "
+        "of selected-outcome probability (not provider certainty). Signal scores are thresholded "
+        "at 0.5 and include one unsupported-claim control per case. Guard rows pair the states "
+        "the agent sent with synthetic denials (other customer, unrelated sanctions name, "
+        "disallowed tool, repeated call). Labels derive from the case expectations where "
+        "possible; the basis of each purpose is listed below, and `consistency` rows only check "
+        "that an adapter and the label builder agree. Questions come from small, correlated "
+        "synthetic cases pending independent human review. A choice with a single option, such as "
+        "`model_route` while no fallback narrative model is configured, is resolved locally and is "
+        "trivially correct for every adapter.",
         "",
+        "| Decision | Questions | Label basis |",
+        "| --- | ---: | --- |",
+        *(
+            f"| {purpose} | {sum(p.question.purpose == purpose for p in probes)} | "
+            + ", ".join(sorted({p.basis for p in probes if p.question.purpose == purpose}))
+            + " |"
+            for purpose in sorted({p.question.purpose for p in probes})
+        ),
+        "",
+        *(
+            [
+                f"Regression gate for `local` (floors in `{THRESHOLDS_FILE}`, set from a "
+                "measurement and not quality targets): "
+                + ("**FAIL**." if violations else "**PASS**."),
+                *(f"- {violation}" for violation in violations),
+                "",
+            ]
+            if floors is not None
+            else []
+        ),
         "| Adapter | Provenance | Decision | N | Accuracy | ECE | p50 / p95 ms | "
         "USD / case | Errors |",
         "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
@@ -491,7 +562,7 @@ async def benchmark(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Compare typed decisions on frozen fictional cases."
+        description="Compare typed decisions on questions recorded from the agent."
     )
     parser.add_argument("--dataset", type=Path, default=Path("evals"))
     parser.add_argument("--output", type=Path, default=Path("build/evals"))
@@ -505,7 +576,21 @@ def main() -> None:
     )
     parser.add_argument("--max-cost", type=Decimal, default=Decimal("1"))
     parser.add_argument("--max-tokens", type=int, default=2_500_000)
+    parser.add_argument(
+        "--thresholds",
+        type=Path,
+        help=f"Accuracy floors for the local adapter (default: DATASET/{THRESHOLDS_FILE}).",
+    )
+    parser.add_argument(
+        "--write-synthetic-fixtures",
+        action="store_true",
+        help="Regenerate the synthetic protocol fixtures in DATASET/decision-replay and stop.",
+    )
     args = parser.parse_args()
+    if args.write_synthetic_fixtures:
+        asyncio.run(write_synthetic_fixtures(args.dataset))
+        print(f"Wrote synthetic protocol fixtures to {args.dataset / 'decision-replay'}.")
+        raise SystemExit(0)
     try:
         result = asyncio.run(
             benchmark(
@@ -515,11 +600,14 @@ def main() -> None:
                 providers=tuple(args.providers),
                 max_cost=args.max_cost,
                 max_tokens=args.max_tokens,
+                thresholds=args.thresholds,
             )
         )
     except (OSError, ValueError) as error:
         parser.exit(2, f"Decision comparison configuration failed ({type(error).__name__}).\n")
     print(f"{'PASS' if result.passed else 'FAIL'}: typed decision comparison ({result.mode}).")
+    for violation in result.gate_violations:
+        print(f"Accuracy gate: {violation}")
     raise SystemExit(0 if result.passed else 1)
 
 

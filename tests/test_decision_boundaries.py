@@ -4,7 +4,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from casefile.bootstrap.decision_benchmark import ReplayTransport, benchmark, probes, settings
+from casefile.bootstrap.decision_benchmark import Probe, ReplayTransport, benchmark, settings
 from casefile.bootstrap.decisions import configured_decisions
 from casefile.features.decisioning.adapters.outbound.jev import JevDecisionModel
 from casefile.features.decisioning.adapters.outbound.llm import HttpLanguageModel, LlmDecisionModel
@@ -46,9 +46,11 @@ def test_invalid_probabilities_scores_and_usage(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("name", ["jev", "llm"])
 @pytest.mark.parametrize("mutation", ["unknown", "nonfinite", "usage", "operation"])
-async def test_provider_contract_rejects_malformed_responses(name: str, mutation: str) -> None:
+async def test_provider_contract_rejects_malformed_responses(
+    name: str, mutation: str, recorded_probes: tuple[Probe, ...]
+) -> None:
     tape = ReplayTransport(Path("evals/decision-replay"))
-    q = probes(Path("evals"))[0].question
+    q = recorded_probes[0].question
 
     def handler(request: httpx.Request) -> httpx.Response:
         raw = tape.handle(request).json()
@@ -84,7 +86,7 @@ async def test_provider_contract_rejects_malformed_responses(name: str, mutation
 async def test_missing_replay_and_budget_do_not_call_live_providers(tmp_path: Path) -> None:
     report = await benchmark(Path("evals"), tmp_path, max_tokens=1)
     assert not report.passed
-    assert report.adapters["jev"]["priority"]["errors"] == 30
+    assert report.adapters["jev"]["priority"]["errors"] == 99
     async with httpx.AsyncClient() as client:
         for configuration in (
             "[]",
@@ -134,7 +136,9 @@ async def test_enabled_jev_rejects_unfilled_environment(key: str, entry: str, me
 
 
 @pytest.mark.asyncio
-async def test_jev_environment_routes_authenticated_requests() -> None:
+async def test_jev_environment_routes_authenticated_requests(
+    recorded_probes: tuple[Probe, ...],
+) -> None:
     tape = ReplayTransport(Path("evals/decision-replay"))
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -156,7 +160,7 @@ async def test_jev_environment_routes_authenticated_requests() -> None:
             client,
         )
         assert set(bridge.routes) == {"risk", "priority"}
-        answer = await bridge.routes["priority"].choose(probes(Path("evals"))[0].question)
+        answer = await bridge.routes["priority"].choose(recorded_probes[0].question)
         assert answer.usage.tokens > 0
         assert answer.usage.cost > 0
         assert "test-only-key" not in repr(bridge)
