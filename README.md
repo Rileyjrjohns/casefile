@@ -1,9 +1,8 @@
 # Casefile
 
-[![CI workflow](https://img.shields.io/badge/CI-GitHub_Actions-blue)](.github/workflows/ci.yml)
+[![CI](https://github.com/Rileyjrjohns/casefile/actions/workflows/ci.yml/badge.svg)](https://github.com/Rileyjrjohns/casefile/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
-![Coverage policy](https://img.shields.io/badge/coverage_gate-90%25_core_%2F_80%25_global-green)
 
 Casefile investigates fraud and compliance alerts for a **fictional bank**.
 It gathers evidence, makes typed decisions and produces a sourced analysis.
