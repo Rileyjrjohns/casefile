@@ -280,9 +280,7 @@ def test_arbitrary_operations_never_close_without_human_review(actions: list[str
         st.sampled_from(["gather", "sources", "analyze", "submit", "close", "fail"]), max_size=40
     ),
 )
-def test_terminal_states_absorb_every_later_operation(
-    start: RunState, actions: list[str]
-) -> None:
+def test_terminal_states_absorb_every_later_operation(start: RunState, actions: list[str]) -> None:
     run = run_at(start)
     for action in actions:
         before = run
