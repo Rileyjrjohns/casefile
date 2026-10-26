@@ -83,9 +83,12 @@ flowchart LR
 ```
 
 Each feature owns `domain`, `application` and inbound/outbound `adapters`.
-Five import contracts enforce feature independence, inward dependencies,
+Six import contracts enforce feature independence, inward dependencies,
 independent adapters and standard-library-only core code, including imports under
-`TYPE_CHECKING`. Only `bootstrap` connects features through ports.
+`TYPE_CHECKING`. A dedicated contract keeps I/O standard-library modules (`socket`,
+`subprocess`, `urllib`, `http`, `sqlite3` and similar) out of `domain`, `application`
+and `shared` ([ADR 0027](docs/adr/0027-no-io-standard-library-in-core-layers.md)).
+Only `bootstrap` connects features through ports.
 
 Runs follow `PENDING → GATHERING → ANALYZING → AWAITING_REVIEW → CLOSED`.
 Immutable `Result` values represent business errors; technical failures raise
