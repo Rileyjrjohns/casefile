@@ -1,19 +1,21 @@
 from dataclasses import FrozenInstanceError
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 from uuid import UUID
 
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
+from casefile.features.review.domain.errors import ReviewError, ReviewErrorCode
 from casefile.features.review.domain.review import (
     ConclusionReview,
     FinalDecision,
     Review,
     ReviewAction,
 )
+from casefile.features.review.tests.support import error_code
 from casefile.shared.ids import ConclusionId, ReviewerId, ReviewId, RunId
-from casefile.shared.result import Err, Ok, Result
+from casefile.shared.result import Ok, Result
 
 FIRST = ConclusionId(UUID(int=1))
 SECOND = ConclusionId(UUID(int=2))
@@ -35,7 +37,7 @@ def submit(
     *,
     confirmed: bool = True,
     at: datetime = AT,
-) -> Result[Review, object]:
+) -> Result[Review, ReviewError]:
     return Review.submit(
         ReviewId(UUID(int=10)),
         RunId(UUID(int=11)),
@@ -83,16 +85,50 @@ def test_correction_retains_before_after_and_reason() -> None:
 def test_invalid_review_actions_return_business_errors(
     action: ReviewAction, correction: str | None, reason: str | None
 ) -> None:
-    assert isinstance(
+    result = ConclusionReview.create(
+        FIRST, "Original", action, corrected_statement=correction, reason=reason
+    )
+    assert error_code(result) == ReviewErrorCode.INVALID_CONCLUSION_REVIEW
+
+
+@pytest.mark.parametrize("action", list(ReviewAction))
+def test_blank_original_is_invalid_for_every_action(action: ReviewAction) -> None:
+    result = ConclusionReview.create(
+        FIRST,
+        " ",
+        action,
+        corrected_statement="New" if action == ReviewAction.CORRECT else None,
+        reason="Reason" if action != ReviewAction.VALIDATE else None,
+    )
+    assert error_code(result) == ReviewErrorCode.INVALID_CONCLUSION_REVIEW
+
+
+@pytest.mark.parametrize(
+    ("action", "correction", "reason"),
+    [
+        (ReviewAction.VALIDATE, None, None),
+        (ReviewAction.VALIDATE, None, "Source relue"),
+        (ReviewAction.CORRECT, "New", "Reason"),
+        (ReviewAction.REJECT, None, "Reason"),
+    ],
+)
+def test_valid_review_actions_retain_exactly_what_was_given(
+    action: ReviewAction, correction: str | None, reason: str | None
+) -> None:
+    review = value(
         ConclusionReview.create(
             FIRST, "Original", action, corrected_statement=correction, reason=reason
-        ),
-        Err,
+        )
     )
+    assert (review.conclusion_id, review.original_statement, review.action) == (
+        FIRST,
+        "Original",
+        action,
+    )
+    assert (review.corrected_statement, review.reason) == (correction, reason)
 
 
-def test_blank_original_is_invalid_and_rejection_is_retained() -> None:
-    assert isinstance(ConclusionReview.create(FIRST, " ", ReviewAction.VALIDATE), Err)
+def test_rejection_is_retained() -> None:
     rejected = value(
         ConclusionReview.create(
             FIRST, "Original", ReviewAction.REJECT, reason="Source insuffisante"
@@ -104,19 +140,37 @@ def test_blank_original_is_invalid_and_rejection_is_retained() -> None:
 
 
 def test_review_requires_explicit_confirmation_and_timezone() -> None:
-    assert isinstance(submit((item(),), confirmed=False), Err)
-    assert isinstance(submit((item(),), at=datetime(2026, 10, 24)), Err)
+    assert error_code(submit((item(),), confirmed=False)) == ReviewErrorCode.CONFIRMATION_REQUIRED
+    naive = datetime(2026, 10, 24)
+    assert error_code(submit((item(),), at=naive)) == ReviewErrorCode.INVALID_TIMESTAMP
+
+
+def test_confirmation_is_checked_before_the_timestamp_and_the_coverage() -> None:
+    result = submit((), (FIRST,), confirmed=False, at=datetime(2026, 10, 24))
+    assert error_code(result) == ReviewErrorCode.CONFIRMATION_REQUIRED
+    result = submit((), (FIRST,), at=datetime(2026, 10, 24))
+    assert error_code(result) == ReviewErrorCode.INVALID_TIMESTAMP
+
+
+@pytest.mark.usefixtures("local_timezone")
+def test_submission_time_is_normalized_to_utc_whatever_the_process_timezone() -> None:
+    paris = timezone(timedelta(hours=2))
+    review = value(submit((item(),), at=datetime(2026, 10, 24, 14, tzinfo=paris)))
+    assert review.submitted_at == AT
+    assert review.submitted_at.utcoffset() == timedelta(0)
+    assert review.submitted_at.tzname() == "UTC"
 
 
 @pytest.mark.parametrize("reviews", [(), (item(), item()), (item(SECOND),), (item(), item(SECOND))])
 def test_review_covers_exactly_the_expected_conclusions(
     reviews: tuple[ConclusionReview, ...],
 ) -> None:
-    assert isinstance(submit(reviews), Err)
+    assert error_code(submit(reviews)) == ReviewErrorCode.INCOMPLETE_REVIEW
 
 
-def test_duplicate_expected_ids_are_rejected() -> None:
-    assert isinstance(submit((item(),), (FIRST, FIRST)), Err)
+@pytest.mark.parametrize("reviews", [(item(),), (item(), item())])
+def test_duplicate_expected_ids_are_rejected(reviews: tuple[ConclusionReview, ...]) -> None:
+    assert error_code(submit(reviews, (FIRST, FIRST))) == ReviewErrorCode.INCOMPLETE_REVIEW
 
 
 @given(expected=st.sets(st.integers(1, 10)), reviewed=st.lists(st.integers(1, 10), max_size=15))
@@ -126,13 +180,14 @@ def test_review_completeness_is_set_equality_without_duplicates(
     expected_ids = tuple(ConclusionId(UUID(int=number)) for number in sorted(expected))
     decisions = tuple(item(ConclusionId(UUID(int=number))) for number in reviewed)
     result = submit(decisions, expected_ids)
-    assert isinstance(result, Ok) == (
-        expected == set(reviewed) and len(reviewed) == len(set(reviewed))
-    )
+    complete = expected == set(reviewed) and len(reviewed) == len(set(reviewed))
+    assert isinstance(result, Ok) == complete
+    if not complete:
+        assert error_code(result) == ReviewErrorCode.INCOMPLETE_REVIEW
 
 
 def test_empty_analysis_still_requires_a_human_review() -> None:
-    assert isinstance(submit((), (), confirmed=False), Err)
+    assert error_code(submit((), (), confirmed=False)) == ReviewErrorCode.CONFIRMATION_REQUIRED
     assert value(submit((), ())).conclusions == ()
 
 
