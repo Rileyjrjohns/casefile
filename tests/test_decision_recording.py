@@ -1,6 +1,7 @@
 """Provider recordings carry the model they were made with, so replays match their keys."""
 
 import json
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from casefile.bootstrap.decision_recording import Recording, canonical
 from tests.decision_support import dataset
 
 RECORDED_AT = datetime(2026, 10, 26, 9, 30, tzinfo=UTC)
+COMMITTED_JEV = Path("evals/decision-replay/jev.json")
 
 
 def synthetic(fixtures: Path, name: str) -> Recording:
@@ -166,3 +168,36 @@ async def test_replay_does_not_match_keys_built_for_another_model(
     report = await benchmark(root, tmp_path / "out", providers=("jev",))
     assert not report.passed
     assert report.adapters["jev"]["priority"]["errors"] == 99
+
+
+def test_the_committed_jev_file_is_a_provider_recording_that_holds_no_credential() -> None:
+    raw = COMMITTED_JEV.read_bytes()
+    for forbidden in (b"Authorization", b"Bearer"):
+        assert forbidden not in raw, forbidden
+    recording = Recording.model_validate_json(raw)
+    assert recording.schema_version == 2
+    assert recording.provenance == "provider-recording"
+    assert recording.model == "jev-1.14.0"
+    assert recording.recorded_at is not None
+    assert recording.responses
+
+
+@pytest.mark.asyncio
+async def test_the_committed_jev_recording_replays_offline_without_a_key(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for key in tuple(os.environ):
+        if key.startswith(("CASEFILE_JEV_", "CASEFILE_LLM_")):
+            monkeypatch.delenv(key)
+    recording = Recording.model_validate_json(COMMITTED_JEV.read_text())
+    assert settings("jev", False, recording).api_key == ""
+    report = await benchmark(dataset(tmp_path, "jev"), tmp_path / "out", providers=("jev",))
+    assert report.passed
+    assert report.mode == "offline"
+    assert report.provenance == {"jev": "provider-recording"}
+    rows = json.loads((tmp_path / "out/decision-observations.json").read_text())["jev"]
+    assert rows and all(row["error"] is None for row in rows)
+    assert (
+        "jev: requested model `jev-1.14.0`, recorded "
+        in (tmp_path / "out/decisions.md").read_text()
+    )
