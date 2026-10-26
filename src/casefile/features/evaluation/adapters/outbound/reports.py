@@ -7,6 +7,11 @@ from pydantic import TypeAdapter
 from casefile.features.evaluation.application.benchmark import SuiteReport
 
 
+def ratio(value: float | None) -> str:
+    """Render a per-case ratio; a case that did not complete is not scored."""
+    return "—" if value is None else f"{value:.3f}"
+
+
 def markdown(report: SuiteReport) -> str:
     metrics = report.metrics
     cost_note = (
@@ -21,6 +26,8 @@ def markdown(report: SuiteReport) -> str:
         "# Casefile evaluation report",
         "",
         f"Result: **{'PASS' if report.passed else 'FAIL'}** · Mode: `{report.mode}`",
+        "",
+        f"Profile: **{report.profile}** · Findings policy: `{report.findings_policy}`",
         "",
         f"Dataset SHA-256: `{report.dataset_sha256}`",
         "",
@@ -49,8 +56,9 @@ def markdown(report: SuiteReport) -> str:
         "| --- | --- | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | --- |",
     ]
     lines.extend(
-        f"| {score.case_id} | {score.category} | {score.state} | {score.precision:.3f} | "
-        f"{score.recall:.3f} | {'correct' if score.recommendation_correct else 'incorrect'} | "
+        f"| {score.case_id} | {score.category} | {score.state} | "
+        f"{ratio(score.precision)} | {ratio(score.recall)} | "
+        f"{'correct' if score.recommendation_correct else 'incorrect'} | "
         f"{score.invalid_sources}/{score.citations} | {score.estimated_cost} | {score.tokens} | "
         f"{score.latency_ms:.3f} | {score.error or '—'} |"
         for score in report.cases

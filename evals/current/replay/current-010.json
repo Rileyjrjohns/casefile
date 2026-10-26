@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "provenance": "synthetic-fixture",
+  "request": {
+    "context": {
+      "alert_id": "current-alert-010",
+      "description": "A transfer at the declared volume followed by one cent. Entirely fictional evaluation case.",
+      "kind": "unusual_transaction",
+      "subject_id": "demo-customer-210"
+    },
+    "evidence": [
+      {
+        "query": "demo-customer-210",
+        "records": [
+          {
+            "country": "FR",
+            "customer_id": "demo-customer-210",
+            "expected_monthly_volume": "5000.00",
+            "legal_name": "Fictional Harbor Mill 210",
+            "occupation": "Fictional demonstration activity",
+            "record_id": "kyc-001",
+            "reviewed_at": "2026-10-01T09:00:00Z"
+          }
+        ],
+        "tool": "get_kyc_profile"
+      },
+      {
+        "query": "demo-customer-210",
+        "records": [
+          {
+            "amount": "5000.00",
+            "booked_at": "2026-10-05T10:00:00Z",
+            "counterparty": "Fictional Counterparty",
+            "country": "FR",
+            "currency": "EUR",
+            "customer_id": "demo-customer-210",
+            "record_id": "txn-001"
+          },
+          {
+            "amount": "0.01",
+            "booked_at": "2026-10-06T10:00:00Z",
+            "counterparty": "Fictional Counterparty",
+            "country": "FR",
+            "currency": "EUR",
+            "customer_id": "demo-customer-210",
+            "record_id": "txn-002"
+          }
+        ],
+        "tool": "list_transactions"
+      },
+      {
+        "query": "demo-customer-210",
+        "records": [],
+        "tool": "list_alerts"
+      },
+      {
+        "query": "demo-customer-210",
+        "records": [],
+        "tool": "list_investigator_notes"
+      },
+      {
+        "query": "Fictional Harbor Mill 210",
+        "records": [],
+        "tool": "search_sanctions"
+      }
+    ],
+    "max_output_tokens": 1024,
+    "prompt_version": "casefile-narrative-v1",
+    "signals": [
+      {
+        "confidence": 1.0,
+        "key": "monthly_volume:2026-10:EUR",
+        "sources": [
+          {
+            "record_id": "kyc-001",
+            "tool": "get_kyc_profile"
+          },
+          {
+            "record_id": "txn-001",
+            "tool": "list_transactions"
+          },
+          {
+            "record_id": "txn-002",
+            "tool": "list_transactions"
+          }
+        ],
+        "statement": "Observed EUR transfers in 2026-10 total 5000.01, exceeding the declared monthly volume of EUR 5000.00. This compares the returned snapshot, not a verified complete monthly statement."
+      }
+    ]
+  },
+  "response": {
+    "estimated_cost": "0",
+    "input_tokens": 128,
+    "model": "fake-narrative-v1",
+    "output_tokens": 64,
+    "statements": [
+      {
+        "key": "monthly_volume:2026-10:EUR",
+        "sources": [
+          {
+            "record_id": "kyc-001",
+            "tool": "get_kyc_profile"
+          },
+          {
+            "record_id": "txn-001",
+            "tool": "list_transactions"
+          },
+          {
+            "record_id": "txn-002",
+            "tool": "list_transactions"
+          }
+        ],
+        "text": "Observed EUR transfers in 2026-10 total 5000.01, exceeding the declared monthly volume of EUR 5000.00. This compares the returned snapshot, not a verified complete monthly statement."
+      }
+    ],
+    "summary": "The demonstration policy identified 1 signal(s). Human review is required."
+  },
+  "reservation": {
+    "tool_calls": 0,
+    "tokens": 1536,
+    "estimated_cost": "0"
+  }
+}

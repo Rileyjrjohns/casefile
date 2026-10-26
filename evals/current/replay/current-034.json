@@ -1,0 +1,274 @@
+{
+  "schema_version": 1,
+  "provenance": "synthetic-fixture",
+  "request": {
+    "context": {
+      "alert_id": "current-alert-034",
+      "description": "Supplier payment with consistent documents. Entirely fictional evaluation case.",
+      "kind": "payment_fraud",
+      "subject_id": "demo-customer-234"
+    },
+    "evidence": [
+      {
+        "query": "demo-customer-234",
+        "records": [
+          {
+            "country": "FR",
+            "customer_id": "demo-customer-234",
+            "expected_monthly_volume": "25000.00",
+            "legal_name": "Demo Larch Engineering 234",
+            "occupation": "Fictional demonstration activity",
+            "record_id": "kyc-001",
+            "reviewed_at": "2026-10-01T09:00:00Z"
+          }
+        ],
+        "tool": "get_kyc_profile"
+      },
+      {
+        "query": "demo-customer-234",
+        "records": [
+          {
+            "amount": "6400.00",
+            "booked_at": "2026-09-10T10:00:00Z",
+            "counterparty": "Demo Supplier",
+            "country": "FR",
+            "currency": "EUR",
+            "customer_id": "demo-customer-234",
+            "record_id": "txn-001"
+          }
+        ],
+        "tool": "list_transactions"
+      },
+      {
+        "query": "demo-customer-234",
+        "records": [
+          {
+            "created_at": "2026-10-20T09:00:00Z",
+            "customer_id": "demo-customer-234",
+            "kind": "unusual_transaction",
+            "record_id": "alert-001",
+            "status": "open",
+            "summary": "Supplier payment awaiting document comparison."
+          }
+        ],
+        "tool": "list_alerts"
+      },
+      {
+        "query": "demo-customer-234",
+        "records": [],
+        "tool": "list_investigator_notes"
+      },
+      {
+        "query": "demo-customer-234",
+        "records": [
+          {
+            "customer_id": "demo-customer-234",
+            "fields": [
+              {
+                "name": "invoice_ref",
+                "value": "DEMO-INV-2026-534"
+              },
+              {
+                "name": "purchase_order_ref",
+                "value": "DEMO-PO-2026-534"
+              },
+              {
+                "name": "amount",
+                "value": "12600.00"
+              },
+              {
+                "name": "currency",
+                "value": "EUR"
+              },
+              {
+                "name": "beneficiary_account",
+                "value": "DEMO-ACCOUNT-SUPPLIER-A"
+              }
+            ],
+            "issued_at": "2026-10-15T09:00:00Z",
+            "issuer": "Demo Supplier Records",
+            "kind": "invoice",
+            "record_id": "doc-001",
+            "text": "Original invoice from the vendor file. Account identifiers are fictional tokens.",
+            "title": "Supplier invoice retained in vendor records",
+            "verification": "independent"
+          },
+          {
+            "customer_id": "demo-customer-234",
+            "fields": [
+              {
+                "name": "purchase_order_ref",
+                "value": "DEMO-PO-2026-534"
+              },
+              {
+                "name": "amount",
+                "value": "12600.00"
+              },
+              {
+                "name": "currency",
+                "value": "EUR"
+              }
+            ],
+            "issued_at": "2026-10-15T09:00:00Z",
+            "issuer": "Demo Procurement Desk",
+            "kind": "purchase_order",
+            "record_id": "doc-002",
+            "text": "Approved order for fictional equipment.",
+            "title": "Approved purchase order",
+            "verification": "independent"
+          },
+          {
+            "customer_id": "demo-customer-234",
+            "fields": [
+              {
+                "name": "invoice_ref",
+                "value": "DEMO-INV-2026-534"
+              },
+              {
+                "name": "amount",
+                "value": "12600.00"
+              },
+              {
+                "name": "currency",
+                "value": "EUR"
+              },
+              {
+                "name": "beneficiary_account",
+                "value": "DEMO-ACCOUNT-SUPPLIER-A"
+              },
+              {
+                "name": "received_via",
+                "value": "Email"
+              }
+            ],
+            "issued_at": "2026-10-15T09:00:00Z",
+            "issuer": "Supplier email",
+            "kind": "payment_instruction",
+            "record_id": "doc-003",
+            "text": "Payment request for the referenced invoice.",
+            "title": "Payment instruction received",
+            "verification": "unverified"
+          },
+          {
+            "customer_id": "demo-customer-234",
+            "fields": [
+              {
+                "name": "invoice_ref",
+                "value": "DEMO-INV-2026-534"
+              },
+              {
+                "name": "beneficiary_account",
+                "value": "DEMO-ACCOUNT-SUPPLIER-A"
+              },
+              {
+                "name": "change_authorized",
+                "value": "no"
+              },
+              {
+                "name": "contact_channel",
+                "value": "Known directory number"
+              }
+            ],
+            "issued_at": "2026-10-15T09:00:00Z",
+            "issuer": "Demo supplier treasury contact",
+            "kind": "supplier_confirmation",
+            "record_id": "doc-004",
+            "text": "Recorded supplier callback for the invoice.",
+            "title": "Callback using the vendor directory",
+            "verification": "independent"
+          }
+        ],
+        "tool": "list_case_documents"
+      },
+      {
+        "query": "Demo Larch Engineering 234",
+        "records": [],
+        "tool": "search_sanctions"
+      }
+    ],
+    "max_output_tokens": 1024,
+    "prompt_version": "casefile-narrative-v1",
+    "signals": [
+      {
+        "confidence": 1.0,
+        "key": "context:approved_purchase",
+        "sources": [
+          {
+            "record_id": "doc-001",
+            "tool": "list_case_documents"
+          },
+          {
+            "record_id": "doc-002",
+            "tool": "list_case_documents"
+          },
+          {
+            "record_id": "doc-003",
+            "tool": "list_case_documents"
+          }
+        ],
+        "statement": "The EUR 12600.00 payment matches the approved order and original invoice; the amount alone does not establish fraud."
+      },
+      {
+        "confidence": 1.0,
+        "key": "context:unchanged_account",
+        "sources": [
+          {
+            "record_id": "doc-003",
+            "tool": "list_case_documents"
+          },
+          {
+            "record_id": "doc-001",
+            "tool": "list_case_documents"
+          }
+        ],
+        "statement": "The instructed beneficiary account matches the original invoice."
+      }
+    ]
+  },
+  "response": {
+    "estimated_cost": "0",
+    "input_tokens": 128,
+    "model": "fake-narrative-v1",
+    "output_tokens": 64,
+    "statements": [
+      {
+        "key": "context:approved_purchase",
+        "sources": [
+          {
+            "record_id": "doc-001",
+            "tool": "list_case_documents"
+          },
+          {
+            "record_id": "doc-002",
+            "tool": "list_case_documents"
+          },
+          {
+            "record_id": "doc-003",
+            "tool": "list_case_documents"
+          }
+        ],
+        "text": "The EUR 12600.00 payment matches the approved order and original invoice; the amount alone does not establish fraud."
+      },
+      {
+        "key": "context:unchanged_account",
+        "sources": [
+          {
+            "record_id": "doc-003",
+            "tool": "list_case_documents"
+          },
+          {
+            "record_id": "doc-001",
+            "tool": "list_case_documents"
+          }
+        ],
+        "text": "The instructed beneficiary account matches the original invoice."
+      }
+    ],
+    "summary": "Supplier payment with consistent documents. Entirely fictional evaluation case.. The document review identified 0 concern(s) and 0 evidence gap(s). Review the corroborating evidence and source records before deciding. This is an investigation recommendation, not a finding of fraud or a lending decision."
+  },
+  "reservation": {
+    "tool_calls": 0,
+    "tokens": 1536,
+    "estimated_cost": "0"
+  }
+}

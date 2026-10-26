@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "current-006",
+  "category": "monthly_volume",
+  "rationale": "The two transfers total 6000.00 but fall in different calendar months, 3000.00 each. The declaration is monthly and v2 never combines months, so nothing exceeds it. No signal; close.",
+  "context": {
+    "subject_id": "demo-customer-206",
+    "alert_id": "current-alert-006",
+    "kind": "unusual_transaction",
+    "description": "Large amounts split across two months. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-206",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-206",
+          "legal_name": "Fictional Harbor Mill 206",
+          "country": "FR",
+          "occupation": "Fictional demonstration activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-206",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-206",
+          "booked_at": "2026-09-15T10:00:00Z",
+          "amount": "3000.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        },
+        {
+          "record_id": "txn-002",
+          "customer_id": "demo-customer-206",
+          "booked_at": "2026-10-15T10:00:00Z",
+          "amount": "3000.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-206",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-206",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Harbor Mill 206",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "Transfers in different months are not combined against a monthly declaration.",
+    "signals": [],
+    "recommendation": "close"
+  }
+}

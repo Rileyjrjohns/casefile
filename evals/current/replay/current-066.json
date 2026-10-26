@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "provenance": "synthetic-fixture",
+  "request": {
+    "context": {
+      "alert_id": "current-alert-066",
+      "description": "Open KYC discrepancy for a customer without a KYC profile. Entirely fictional evaluation case.",
+      "kind": "kyc_inconsistency",
+      "subject_id": "demo-customer-266"
+    },
+    "evidence": [
+      {
+        "query": "demo-customer-266",
+        "records": [],
+        "tool": "get_kyc_profile"
+      },
+      {
+        "query": "demo-customer-266",
+        "records": [],
+        "tool": "list_transactions"
+      },
+      {
+        "query": "demo-customer-266",
+        "records": [
+          {
+            "created_at": "2026-10-20T09:00:00Z",
+            "customer_id": "demo-customer-266",
+            "kind": "kyc_mismatch",
+            "record_id": "alert-001",
+            "status": "open",
+            "summary": "Declared occupation differs from records."
+          }
+        ],
+        "tool": "list_alerts"
+      },
+      {
+        "query": "demo-customer-266",
+        "records": [],
+        "tool": "list_investigator_notes"
+      }
+    ],
+    "max_output_tokens": 1024,
+    "prompt_version": "casefile-narrative-v1",
+    "signals": [
+      {
+        "confidence": 0.7,
+        "key": "kyc:alert-001",
+        "sources": [
+          {
+            "record_id": "alert-001",
+            "tool": "list_alerts"
+          }
+        ],
+        "statement": "An open alert reports inconsistent KYC information."
+      }
+    ]
+  },
+  "response": {
+    "estimated_cost": "0",
+    "input_tokens": 128,
+    "model": "fake-narrative-v1",
+    "output_tokens": 64,
+    "statements": [
+      {
+        "key": "kyc:alert-001",
+        "sources": [
+          {
+            "record_id": "alert-001",
+            "tool": "list_alerts"
+          }
+        ],
+        "text": "An open alert reports inconsistent KYC information."
+      }
+    ],
+    "summary": "The demonstration policy identified 1 signal(s). Human review is required."
+  },
+  "reservation": {
+    "tool_calls": 0,
+    "tokens": 1536,
+    "estimated_cost": "0"
+  }
+}

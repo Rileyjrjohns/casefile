@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "current-060",
+  "category": "identity",
+  "rationale": "The search returns two entries for the name, san-001 and san-002, so the hit is ambiguous and the single biography cannot be tied to one of them. The dossier needs an unambiguous list entry: an identity-documents gap anchored to the first record. Request information.",
+  "context": {
+    "subject_id": "demo-customer-260",
+    "alert_id": "current-alert-060",
+    "kind": "sanctions_identity_review",
+    "description": "Same-name screening alert returning two list entries. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-260",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-260",
+          "legal_name": "Demo Nora Valmer 260",
+          "country": "FR",
+          "occupation": "Fictional demonstration activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-260",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-260",
+          "booked_at": "2026-10-02T10:00:00Z",
+          "amount": "700.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-260",
+      "records": [
+        {
+          "record_id": "alert-001",
+          "customer_id": "demo-customer-260",
+          "kind": "sanctions_match",
+          "status": "open",
+          "created_at": "2026-10-20T09:00:00Z",
+          "summary": "Name-only screening hit awaiting identity comparison."
+        }
+      ]
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-260",
+      "records": []
+    },
+    {
+      "tool": "list_case_documents",
+      "query": "demo-customer-260",
+      "records": [
+        {
+          "record_id": "doc-001",
+          "customer_id": "demo-customer-260",
+          "kind": "identity_record",
+          "title": "Customer identity document",
+          "issuer": "Demo identity verification desk",
+          "issued_at": "2026-10-15T09:00:00Z",
+          "verification": "independent",
+          "fields": [
+            {
+              "name": "legal_name",
+              "value": "Demo Nora Valmer 260"
+            },
+            {
+              "name": "date_of_birth",
+              "value": "1985-02-17"
+            },
+            {
+              "name": "country",
+              "value": "FR"
+            },
+            {
+              "name": "document_ref",
+              "value": "DEMO-ID-60"
+            }
+          ],
+          "text": "Fictional identity check; no real document."
+        },
+        {
+          "record_id": "doc-002",
+          "customer_id": "demo-customer-260",
+          "kind": "watchlist_identity",
+          "title": "Biography attached to the list entry",
+          "issuer": "Fictional screening provider",
+          "issued_at": "2026-10-15T09:00:00Z",
+          "verification": "independent",
+          "fields": [
+            {
+              "name": "sanction_record_id",
+              "value": "san-001"
+            },
+            {
+              "name": "legal_name",
+              "value": "Demo Nora Valmer 260"
+            },
+            {
+              "name": "date_of_birth",
+              "value": "1959-09-30"
+            },
+            {
+              "name": "country",
+              "value": "XQ"
+            }
+          ],
+          "text": "Biography attached to the list entry."
+        },
+        {
+          "record_id": "doc-003",
+          "customer_id": "demo-customer-260",
+          "kind": "registry_confirmation",
+          "title": "Independent identity cross-check",
+          "issuer": "Demo civil registry simulator",
+          "issued_at": "2026-10-15T09:00:00Z",
+          "verification": "independent",
+          "fields": [
+            {
+              "name": "legal_name",
+              "value": "Demo Nora Valmer 260"
+            },
+            {
+              "name": "date_of_birth",
+              "value": "1985-02-17"
+            },
+            {
+              "name": "country",
+              "value": "FR"
+            },
+            {
+              "name": "document_ref",
+              "value": "DEMO-ID-60"
+            }
+          ],
+          "text": "Independent fictional registry record."
+        }
+      ]
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Demo Nora Valmer 260",
+      "records": [
+        {
+          "record_id": "san-001",
+          "name": "Demo Nora Valmer 260",
+          "aliases": [],
+          "program": "FICTIONAL-DEMONSTRATION-LIST",
+          "listed_at": "2026-09-01"
+        },
+        {
+          "record_id": "san-002",
+          "name": "Demo Nora Valmer 260",
+          "aliases": [],
+          "program": "FICTIONAL-DEMONSTRATION-LIST",
+          "listed_at": "2026-09-01"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "summary": "Two returned list entries make the comparison ambiguous.",
+    "signals": [
+      {
+        "key": "gap:identity_documents",
+        "statement": "The name-only alert needs an unambiguous list entry, its biography, the customer identity record and an independent registry check.",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "get_kyc_profile",
+            "record_id": "kyc-001"
+          }
+        ]
+      }
+    ],
+    "recommendation": "request_information"
+  }
+}

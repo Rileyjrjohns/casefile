@@ -52,6 +52,14 @@ as suspicious findings merely because they appear in the analysis. With no
 established concern, an evidence gap leads the offline policy to request information.
 All conclusions, including mitigating facts, still require explicit human review.
 
+Record-level concerns still apply in the three workflows because they block closure
+([ADR 018](adr/0018-recommendation-closure-constraints.md)): an open `kyc_mismatch`
+alert is reported as a KYC concern, and an exact fictional list entry returned for
+the customer is reported as a sanctions concern in the payment and credit workflows.
+In the identity workflow that list entry is the hit being compared, so it is not
+reported separately; the biography comparison decides. Transaction-volume rules are
+not applied to the dossiers.
+
 The local transaction-risk model remains available for the payment case. It is
 not applied to the credit-document or identity scenarios, which are outside its
 synthetic transaction feature space. Narrative text defaults to deterministic

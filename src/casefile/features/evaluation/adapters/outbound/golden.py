@@ -74,7 +74,7 @@ class AnalysisDocument(Document):
 class GoldenDocument(Document):
     schema_version: Literal[1]
     fictional: Literal[True]
-    id: Annotated[str, StringConstraints(pattern=r"^case-[0-9]{3}$", strict=True)]
+    id: Annotated[str, StringConstraints(pattern=r"^(case|current)-[0-9]{3}$", strict=True)]
     category: Annotated[str, StringConstraints(pattern=r"^[a-z_]+$", strict=True)]
     rationale: Text
     context: dict[str, JsonValue]

@@ -70,8 +70,9 @@ class CaseScore:
     true_positives: int
     false_positives: int
     false_negatives: int
-    precision: float
-    recall: float
+    # None when the run did not complete: a broken run has no meaningful per-case score.
+    precision: float | None
+    recall: float | None
     recommendation_correct: bool
     invalid_sources: int
     citations: int
@@ -125,6 +126,7 @@ def assess(
     precision, recall = rates(tp, fp, fn)
     sources = tuple(source for signal in actual.signals for source in signal.sources)
     completed = actual.state == "AWAITING_REVIEW" and actual.error is None
+    # Counts still feed the micro average; only the per-case ratios are withheld.
     return CaseScore(
         case_id,
         category,
@@ -135,8 +137,8 @@ def assess(
         tp,
         fp,
         fn,
-        precision,
-        recall,
+        precision if completed else None,
+        recall if completed else None,
         completed and actual.recommendation == expected.recommendation,
         sum(source not in actual.observed_sources for source in sources),
         len(sources),

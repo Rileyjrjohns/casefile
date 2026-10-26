@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "current-014",
+  "category": "currency",
+  "rationale": "Both the volume comparison and the currency gap need a KYC baseline (findings_policy requires a profile), and none is returned, so no transfer signal is possible. Missing KYC alone forbids closing (ADR 018): request_information. The sanctions search is never made because there is no legal name to search.",
+  "context": {
+    "subject_id": "demo-customer-214",
+    "alert_id": "current-alert-014",
+    "kind": "unusual_transaction",
+    "description": "A dollar transfer for a customer without a KYC profile. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-214",
+      "records": []
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-214",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-214",
+          "booked_at": "2026-10-08T10:00:00Z",
+          "amount": "7000.00",
+          "currency": "USD",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-214",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-214",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "Without a baseline no transfer signal exists, but closure is still blocked.",
+    "signals": [],
+    "recommendation": "request_information"
+  }
+}

@@ -74,6 +74,31 @@ def test_empty_signals_are_perfect_only_when_nothing_was_expected() -> None:
     assert missed.precision == missed.recall == 0
 
 
+@pytest.mark.parametrize(
+    "actual",
+    [
+        replace(ACTUAL, state="FAILED", signals=(), recommendation=None),
+        replace(ACTUAL, state="ANALYZING", signals=(), recommendation=None, error="ValueError"),
+        replace(ACTUAL, error="ProviderFailure"),
+    ],
+)
+def test_a_run_that_did_not_complete_is_not_scored_per_case(actual: Observation) -> None:
+    clear = replace(EXPECTED, signals=(), recommendation="close")
+    for expected in (EXPECTED, clear):
+        score = assess("case-001", "volume", expected, actual)
+        assert not score.completed
+        assert score.precision is None and score.recall is None
+
+
+def test_incomplete_cases_keep_their_counts_in_the_micro_average() -> None:
+    good = assess("case-001", "volume", EXPECTED, ACTUAL)
+    failed = assess("case-002", "volume", EXPECTED, replace(ACTUAL, state="FAILED", signals=()))
+    assert failed.precision is None and failed.recall is None
+    assert (failed.true_positives, failed.false_negatives) == (0, 1)
+    total = aggregate((good, failed))
+    assert (total.signal_precision, total.signal_recall) == (1, 0.5)
+
+
 def test_duplicate_predictions_are_false_positives_and_cannot_inflate_recall() -> None:
     actual = replace(ACTUAL, signals=ACTUAL.signals * 2)
     score = assess("case-001", "volume", EXPECTED, actual)
@@ -111,7 +136,12 @@ class MemoryRunner:
 async def test_suite_keeps_case_and_dataset_identity() -> None:
     case = BenchmarkCase("case-001", "volume", "A fictional volume alert.", EXPECTED, "{}", "{}")
     report = await EvaluateSuite(MemoryRunner()).execute(
-        (case,), replace(LIMITS, min_cases=1), mode="replay", dataset_sha256="a" * 64
+        (case,),
+        replace(LIMITS, min_cases=1),
+        mode="replay",
+        dataset_sha256="a" * 64,
+        profile="test profile",
+        findings_policy="findings-v1",
     )
     assert report.passed
     assert report.dataset_sha256 == "a" * 64

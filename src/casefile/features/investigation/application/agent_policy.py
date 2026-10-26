@@ -113,8 +113,15 @@ def candidates(
                 )
             )
     if kind in BANKING_KINDS:
+        # Dossier comparisons replace the transaction-volume rules, but record-level concerns
+        # stay: detected instructions and open KYC mismatches block closure (ADR 018). An exact
+        # list entry is a concern too, except in the identity workflow, where that entry is the
+        # very hit being compared against the customer's documents.
+        carried = ("instruction:", "kyc:") + (
+            () if kind == "sanctions_identity_review" else ("sanctions:",)
+        )
         return banking_findings(evidence, kind) + tuple(
-            signal for signal in signals if signal.key.startswith("instruction:")
+            signal for signal in signals if signal.key.startswith(carried)
         )
     return tuple(signals) + (
         additional_findings(evidence) if policy_version == CURRENT_FINDINGS else ()

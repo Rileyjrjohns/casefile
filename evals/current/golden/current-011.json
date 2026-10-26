@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "current-011",
+  "category": "currency",
+  "rationale": "The KYC baseline is assumed to be EUR and there is no conversion (ADR 019, docs/known-limitations.md). A 9000.00 USD amount must not be compared with 5000.00 EUR in either direction, so there is no volume signal, only an information gap citing the transfer and the profile. No concern plus a gap means request_information (ADR 018).",
+  "context": {
+    "subject_id": "demo-customer-211",
+    "alert_id": "current-alert-011",
+    "kind": "unusual_transaction",
+    "description": "A single large transfer in US dollars. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-211",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-211",
+          "legal_name": "Fictional Cedar Wharf 211",
+          "country": "FR",
+          "occupation": "Fictional demonstration activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-211",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-211",
+          "booked_at": "2026-10-08T10:00:00Z",
+          "amount": "9000.00",
+          "currency": "USD",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-211",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-211",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Cedar Wharf 211",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "A foreign-currency amount cannot be compared with the EUR baseline.",
+    "signals": [
+      {
+        "key": "gap:currency:txn-001",
+        "statement": "Transfer txn-001 uses USD; the fictional KYC baseline is in EUR. Obtain a comparable amount before evaluating volume.",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-001"
+          },
+          {
+            "tool": "get_kyc_profile",
+            "record_id": "kyc-001"
+          }
+        ]
+      }
+    ],
+    "recommendation": "request_information"
+  }
+}

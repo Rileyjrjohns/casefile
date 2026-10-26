@@ -11,7 +11,7 @@ import httpx
 import pytest
 from pydantic import ValidationError
 
-from casefile.bootstrap.evaluations import AgentCaseRunner, run_evaluations
+from casefile.bootstrap.evaluations import LEGACY_PROFILE, AgentCaseRunner, run_evaluations
 from casefile.features.evaluation.adapters.outbound.golden import (
     GoldenDocument,
     ThresholdDocument,
@@ -24,6 +24,7 @@ from casefile.features.investigation.adapters.outbound.agent.http_model import (
     HttpLanguageModel,
     ModelSettings,
 )
+from casefile.features.investigation.application.findings_policy import LEGACY_FINDINGS
 from tests.test_evaluations import EVALS
 
 
@@ -79,7 +80,10 @@ async def test_http_evaluations_report_usage_and_continue_after_provider_failure
     before = load_suite(EVALS).sha256
     async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
         report = await run_evaluations(
-            EVALS, tmp_path, model=HttpLanguageModel(client, settings, AgentJsonCodec())
+            EVALS,
+            tmp_path,
+            profile=LEGACY_PROFILE,
+            model=HttpLanguageModel(client, settings, AgentJsonCodec()),
         )
     assert calls == 30
     assert report.mode == "http" and report.passed is not fail_first
@@ -175,7 +179,7 @@ async def test_invalid_scenarios_are_failed_observations(defect: str) -> None:
     else:
         scenario["evidence"][1]["records"][0]["amount"] = "not money"
         case = replace(case, scenario_json=json.dumps(scenario))
-    observation = await AgentCaseRunner().run(case)
+    observation = await AgentCaseRunner(findings_policy=LEGACY_FINDINGS).run(case)
     assert observation.state == "ERROR" and observation.error is not None
 
 
@@ -192,6 +196,8 @@ def test_cli_ignores_model_configuration_in_replay_and_requires_it_for_http(
             sys.executable,
             "-m",
             "casefile.bootstrap.evaluations",
+            "--profile",
+            "legacy",
             "--mode",
             mode,
             "--dataset",
@@ -208,7 +214,7 @@ def test_cli_ignores_model_configuration_in_replay_and_requires_it_for_http(
     assert result.returncode == (0 if mode == "replay" else 2)
     assert "invalid-test-secret" not in result.stdout + result.stderr
     if mode == "replay":
-        assert "PASS: 30 cases" in result.stdout
+        assert "PASS: findings-v1 regression profile, 30 cases" in result.stdout
 
 
 def test_cli_regression_exits_nonzero_and_keeps_reports(tmp_path: Path) -> None:
@@ -224,6 +230,8 @@ def test_cli_regression_exits_nonzero_and_keeps_reports(tmp_path: Path) -> None:
             sys.executable,
             "-m",
             "casefile.bootstrap.evaluations",
+            "--profile",
+            "legacy",
             "--dataset",
             str(dataset),
             "--output",
@@ -235,5 +243,5 @@ def test_cli_regression_exits_nonzero_and_keeps_reports(tmp_path: Path) -> None:
         check=False,
     )
     assert result.returncode == 1
-    assert "FAIL: 30 cases" in result.stdout
+    assert "FAIL: findings-v1 regression profile, 30 cases" in result.stdout
     assert json.loads((output / "report.json").read_text())["passed"] is False

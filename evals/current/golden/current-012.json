@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "current-012",
+  "category": "currency",
+  "rationale": "The two EUR transfers total 5100.00 against 5000.00 and trigger the monthly finding. The GBP transfer is excluded from that sum (ADR 019: other currencies are excluded from comparisons) and gets its own currency gap, so it must not appear among the monthly sources. A concern exists, so escalate.",
+  "context": {
+    "subject_id": "demo-customer-212",
+    "alert_id": "current-alert-012",
+    "kind": "unusual_transaction",
+    "description": "EUR transfers over the declaration with a small sterling transfer. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-212",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-212",
+          "legal_name": "Fictional Cedar Wharf 212",
+          "country": "FR",
+          "occupation": "Fictional demonstration activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-212",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-212",
+          "booked_at": "2026-10-03T10:00:00Z",
+          "amount": "2500.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        },
+        {
+          "record_id": "txn-002",
+          "customer_id": "demo-customer-212",
+          "booked_at": "2026-10-10T10:00:00Z",
+          "amount": "2600.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        },
+        {
+          "record_id": "txn-003",
+          "customer_id": "demo-customer-212",
+          "booked_at": "2026-10-11T10:00:00Z",
+          "amount": "100.00",
+          "currency": "GBP",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-212",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-212",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Cedar Wharf 212",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "Foreign-currency amounts are excluded from the EUR monthly total.",
+    "signals": [
+      {
+        "key": "monthly_volume:2026-10:EUR",
+        "statement": "Observed EUR transfers in 2026-10 total 5100.00, exceeding the declared monthly volume of EUR 5000.00. This compares the returned snapshot, not a verified complete monthly statement.",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "get_kyc_profile",
+            "record_id": "kyc-001"
+          },
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-001"
+          },
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-002"
+          }
+        ]
+      },
+      {
+        "key": "gap:currency:txn-003",
+        "statement": "Transfer txn-003 uses GBP; the fictional KYC baseline is in EUR. Obtain a comparable amount before evaluating volume.",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-003"
+          },
+          {
+            "tool": "get_kyc_profile",
+            "record_id": "kyc-001"
+          }
+        ]
+      }
+    ],
+    "recommendation": "escalate"
+  }
+}

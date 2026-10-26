@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "current-001",
+  "category": "monthly_volume",
+  "rationale": "Each of the three October EUR transfers is below the EUR 5000.00 declared monthly volume, so no individual-volume concern exists, yet together they total 5500.00. ADR 019 and docs/agent.md say findings-v2 groups distinct EUR transfers by UTC calendar month and cites the KYC baseline and every included transfer. An unresolved concern blocks closure (ADR 018), so the recommendation is escalate.",
+  "context": {
+    "subject_id": "demo-customer-201",
+    "alert_id": "current-alert-001",
+    "kind": "unusual_transaction",
+    "description": "Three October transfers. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-201",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-201",
+          "legal_name": "Fictional Harbor Mill 201",
+          "country": "FR",
+          "occupation": "Fictional demonstration activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-201",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-201",
+          "booked_at": "2026-10-05T10:00:00Z",
+          "amount": "2000.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        },
+        {
+          "record_id": "txn-002",
+          "customer_id": "demo-customer-201",
+          "booked_at": "2026-10-12T10:00:00Z",
+          "amount": "2000.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        },
+        {
+          "record_id": "txn-003",
+          "customer_id": "demo-customer-201",
+          "booked_at": "2026-10-19T10:00:00Z",
+          "amount": "1500.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-201",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-201",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Harbor Mill 201",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "Three small October transfers exceed the declared monthly volume together.",
+    "signals": [
+      {
+        "key": "monthly_volume:2026-10:EUR",
+        "statement": "Observed EUR transfers in 2026-10 total 5500.00, exceeding the declared monthly volume of EUR 5000.00. This compares the returned snapshot, not a verified complete monthly statement.",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "get_kyc_profile",
+            "record_id": "kyc-001"
+          },
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-001"
+          },
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-002"
+          },
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-003"
+          }
+        ]
+      }
+    ],
+    "recommendation": "escalate"
+  }
+}

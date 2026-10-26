@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "current-013",
+  "category": "currency",
+  "rationale": "The EUR transfer is well within the declaration. The 20000.00 CHF transfer cannot be evaluated against a EUR baseline, so it yields only a currency gap. An open evidence gap prevents a closing recommendation even with no concern (ADR 018): request_information.",
+  "context": {
+    "subject_id": "demo-customer-213",
+    "alert_id": "current-alert-013",
+    "kind": "unusual_transaction",
+    "description": "A routine EUR transfer and a large Swiss franc transfer. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-213",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-213",
+          "legal_name": "Fictional Cedar Wharf 213",
+          "country": "FR",
+          "occupation": "Fictional demonstration activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-213",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-213",
+          "booked_at": "2026-10-03T10:00:00Z",
+          "amount": "1200.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        },
+        {
+          "record_id": "txn-002",
+          "customer_id": "demo-customer-213",
+          "booked_at": "2026-10-14T10:00:00Z",
+          "amount": "20000.00",
+          "currency": "CHF",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-213",
+      "records": []
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-213",
+      "records": []
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Fictional Cedar Wharf 213",
+      "records": []
+    }
+  ],
+  "expected": {
+    "summary": "A routine EUR transfer does not erase the gap for an incomparable amount.",
+    "signals": [
+      {
+        "key": "gap:currency:txn-002",
+        "statement": "Transfer txn-002 uses CHF; the fictional KYC baseline is in EUR. Obtain a comparable amount before evaluating volume.",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "list_transactions",
+            "record_id": "txn-002"
+          },
+          {
+            "tool": "get_kyc_profile",
+            "record_id": "kyc-001"
+          }
+        ]
+      }
+    ],
+    "recommendation": "request_information"
+  }
+}

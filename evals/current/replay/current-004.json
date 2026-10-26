@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "provenance": "synthetic-fixture",
+  "request": {
+    "context": {
+      "alert_id": "current-alert-004",
+      "description": "September exceeds, October does not. Entirely fictional evaluation case.",
+      "kind": "unusual_transaction",
+      "subject_id": "demo-customer-204"
+    },
+    "evidence": [
+      {
+        "query": "demo-customer-204",
+        "records": [
+          {
+            "country": "FR",
+            "customer_id": "demo-customer-204",
+            "expected_monthly_volume": "5000.00",
+            "legal_name": "Fictional Harbor Mill 204",
+            "occupation": "Fictional demonstration activity",
+            "record_id": "kyc-001",
+            "reviewed_at": "2026-10-01T09:00:00Z"
+          }
+        ],
+        "tool": "get_kyc_profile"
+      },
+      {
+        "query": "demo-customer-204",
+        "records": [
+          {
+            "amount": "3000.00",
+            "booked_at": "2026-09-03T10:00:00Z",
+            "counterparty": "Fictional Counterparty",
+            "country": "FR",
+            "currency": "EUR",
+            "customer_id": "demo-customer-204",
+            "record_id": "txn-001"
+          },
+          {
+            "amount": "3000.00",
+            "booked_at": "2026-09-20T10:00:00Z",
+            "counterparty": "Fictional Counterparty",
+            "country": "FR",
+            "currency": "EUR",
+            "customer_id": "demo-customer-204",
+            "record_id": "txn-002"
+          },
+          {
+            "amount": "2000.00",
+            "booked_at": "2026-10-04T10:00:00Z",
+            "counterparty": "Fictional Counterparty",
+            "country": "FR",
+            "currency": "EUR",
+            "customer_id": "demo-customer-204",
+            "record_id": "txn-003"
+          },
+          {
+            "amount": "2000.00",
+            "booked_at": "2026-10-18T10:00:00Z",
+            "counterparty": "Fictional Counterparty",
+            "country": "FR",
+            "currency": "EUR",
+            "customer_id": "demo-customer-204",
+            "record_id": "txn-004"
+          }
+        ],
+        "tool": "list_transactions"
+      },
+      {
+        "query": "demo-customer-204",
+        "records": [],
+        "tool": "list_alerts"
+      },
+      {
+        "query": "demo-customer-204",
+        "records": [],
+        "tool": "list_investigator_notes"
+      },
+      {
+        "query": "Fictional Harbor Mill 204",
+        "records": [],
+        "tool": "search_sanctions"
+      }
+    ],
+    "max_output_tokens": 1024,
+    "prompt_version": "casefile-narrative-v1",
+    "signals": [
+      {
+        "confidence": 1.0,
+        "key": "monthly_volume:2026-09:EUR",
+        "sources": [
+          {
+            "record_id": "kyc-001",
+            "tool": "get_kyc_profile"
+          },
+          {
+            "record_id": "txn-001",
+            "tool": "list_transactions"
+          },
+          {
+            "record_id": "txn-002",
+            "tool": "list_transactions"
+          }
+        ],
+        "statement": "Observed EUR transfers in 2026-09 total 6000.00, exceeding the declared monthly volume of EUR 5000.00. This compares the returned snapshot, not a verified complete monthly statement."
+      }
+    ]
+  },
+  "response": {
+    "estimated_cost": "0",
+    "input_tokens": 128,
+    "model": "fake-narrative-v1",
+    "output_tokens": 64,
+    "statements": [
+      {
+        "key": "monthly_volume:2026-09:EUR",
+        "sources": [
+          {
+            "record_id": "kyc-001",
+            "tool": "get_kyc_profile"
+          },
+          {
+            "record_id": "txn-001",
+            "tool": "list_transactions"
+          },
+          {
+            "record_id": "txn-002",
+            "tool": "list_transactions"
+          }
+        ],
+        "text": "Observed EUR transfers in 2026-09 total 6000.00, exceeding the declared monthly volume of EUR 5000.00. This compares the returned snapshot, not a verified complete monthly statement."
+      }
+    ],
+    "summary": "The demonstration policy identified 1 signal(s). Human review is required."
+  },
+  "reservation": {
+    "tool_calls": 0,
+    "tokens": 1536,
+    "estimated_cost": "0"
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "provenance": "synthetic-fixture",
+  "request": {
+    "context": {
+      "alert_id": "current-alert-031",
+      "description": "Notes that mention prior reviews and guidelines. Entirely fictional evaluation case.",
+      "kind": "unusual_transaction",
+      "subject_id": "demo-customer-231"
+    },
+    "evidence": [
+      {
+        "query": "demo-customer-231",
+        "records": [
+          {
+            "country": "FR",
+            "customer_id": "demo-customer-231",
+            "expected_monthly_volume": "5000.00",
+            "legal_name": "Fictional Fir Landing 231",
+            "occupation": "Fictional demonstration activity",
+            "record_id": "kyc-001",
+            "reviewed_at": "2026-10-01T09:00:00Z"
+          }
+        ],
+        "tool": "get_kyc_profile"
+      },
+      {
+        "query": "demo-customer-231",
+        "records": [
+          {
+            "amount": "900.00",
+            "booked_at": "2026-10-08T10:00:00Z",
+            "counterparty": "Fictional Counterparty",
+            "country": "FR",
+            "currency": "EUR",
+            "customer_id": "demo-customer-231",
+            "record_id": "txn-001"
+          }
+        ],
+        "tool": "list_transactions"
+      },
+      {
+        "query": "demo-customer-231",
+        "records": [],
+        "tool": "list_alerts"
+      },
+      {
+        "query": "demo-customer-231",
+        "records": [
+          {
+            "author": "Demo Case Operations",
+            "created_at": "2026-10-21T09:00:00Z",
+            "customer_id": "demo-customer-231",
+            "record_id": "note-001",
+            "text": "Previous review in June found nothing unusual; the team followed the published guidelines."
+          },
+          {
+            "author": "Demo Case Operations",
+            "created_at": "2026-10-21T09:00:00Z",
+            "customer_id": "demo-customer-231",
+            "record_id": "note-002",
+            "text": "Reminder: the monthly declaration was updated after the customer's annual review."
+          }
+        ],
+        "tool": "list_investigator_notes"
+      },
+      {
+        "query": "Fictional Fir Landing 231",
+        "records": [],
+        "tool": "search_sanctions"
+      }
+    ],
+    "max_output_tokens": 1024,
+    "prompt_version": "casefile-narrative-v1",
+    "signals": []
+  },
+  "response": {
+    "estimated_cost": "0",
+    "input_tokens": 128,
+    "model": "fake-narrative-v1",
+    "output_tokens": 64,
+    "statements": [],
+    "summary": "The demonstration policy identified 0 signal(s). Human review is required."
+  },
+  "reservation": {
+    "tool_calls": 0,
+    "tokens": 1536,
+    "estimated_cost": "0"
+  }
+}

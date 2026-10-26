@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "fictional": true,
+  "id": "current-069",
+  "category": "identity",
+  "rationale": "The biography comparison supports the homonym hypothesis (different birth date and country, registry confirmation), which alone would allow closure. The customer also has an open KYC-mismatch alert, an unresolved concern under ADR 018 that the identity comparison does not address. The returned list entry stays the compared hit and is not reported as a separate sanctions concern. Expect the KYC concern and escalate.",
+  "context": {
+    "subject_id": "demo-customer-269",
+    "alert_id": "current-alert-069",
+    "kind": "sanctions_identity_review",
+    "description": "Same-name screening alert, different identity, with an open KYC discrepancy. Entirely fictional evaluation case."
+  },
+  "evidence": [
+    {
+      "tool": "get_kyc_profile",
+      "query": "demo-customer-269",
+      "records": [
+        {
+          "record_id": "kyc-001",
+          "customer_id": "demo-customer-269",
+          "legal_name": "Demo Nora Valmer 269",
+          "country": "FR",
+          "occupation": "Fictional demonstration activity",
+          "expected_monthly_volume": "5000.00",
+          "reviewed_at": "2026-10-01T09:00:00Z"
+        }
+      ]
+    },
+    {
+      "tool": "list_transactions",
+      "query": "demo-customer-269",
+      "records": [
+        {
+          "record_id": "txn-001",
+          "customer_id": "demo-customer-269",
+          "booked_at": "2026-10-02T10:00:00Z",
+          "amount": "700.00",
+          "currency": "EUR",
+          "counterparty": "Fictional Counterparty",
+          "country": "FR"
+        }
+      ]
+    },
+    {
+      "tool": "list_alerts",
+      "query": "demo-customer-269",
+      "records": [
+        {
+          "record_id": "alert-001",
+          "customer_id": "demo-customer-269",
+          "kind": "sanctions_match",
+          "status": "open",
+          "created_at": "2026-10-20T09:00:00Z",
+          "summary": "Name-only screening hit awaiting identity comparison."
+        },
+        {
+          "record_id": "alert-002",
+          "customer_id": "demo-customer-269",
+          "kind": "kyc_mismatch",
+          "status": "open",
+          "created_at": "2026-10-20T09:00:00Z",
+          "summary": "Declared residence differs from records."
+        }
+      ]
+    },
+    {
+      "tool": "list_investigator_notes",
+      "query": "demo-customer-269",
+      "records": []
+    },
+    {
+      "tool": "list_case_documents",
+      "query": "demo-customer-269",
+      "records": [
+        {
+          "record_id": "doc-001",
+          "customer_id": "demo-customer-269",
+          "kind": "identity_record",
+          "title": "Customer identity document",
+          "issuer": "Demo identity verification desk",
+          "issued_at": "2026-10-15T09:00:00Z",
+          "verification": "independent",
+          "fields": [
+            {
+              "name": "legal_name",
+              "value": "Demo Nora Valmer 269"
+            },
+            {
+              "name": "date_of_birth",
+              "value": "1985-02-17"
+            },
+            {
+              "name": "country",
+              "value": "FR"
+            },
+            {
+              "name": "document_ref",
+              "value": "DEMO-ID-69"
+            }
+          ],
+          "text": "Fictional identity check; no real document."
+        },
+        {
+          "record_id": "doc-002",
+          "customer_id": "demo-customer-269",
+          "kind": "watchlist_identity",
+          "title": "Biography attached to the list entry",
+          "issuer": "Fictional screening provider",
+          "issued_at": "2026-10-15T09:00:00Z",
+          "verification": "independent",
+          "fields": [
+            {
+              "name": "sanction_record_id",
+              "value": "san-001"
+            },
+            {
+              "name": "legal_name",
+              "value": "Demo Nora Valmer 269"
+            },
+            {
+              "name": "date_of_birth",
+              "value": "1959-09-30"
+            },
+            {
+              "name": "country",
+              "value": "XQ"
+            }
+          ],
+          "text": "Biography attached to the list entry."
+        },
+        {
+          "record_id": "doc-003",
+          "customer_id": "demo-customer-269",
+          "kind": "registry_confirmation",
+          "title": "Independent identity cross-check",
+          "issuer": "Demo civil registry simulator",
+          "issued_at": "2026-10-15T09:00:00Z",
+          "verification": "independent",
+          "fields": [
+            {
+              "name": "legal_name",
+              "value": "Demo Nora Valmer 269"
+            },
+            {
+              "name": "date_of_birth",
+              "value": "1985-02-17"
+            },
+            {
+              "name": "country",
+              "value": "FR"
+            },
+            {
+              "name": "document_ref",
+              "value": "DEMO-ID-69"
+            }
+          ],
+          "text": "Independent fictional registry record."
+        }
+      ]
+    },
+    {
+      "tool": "search_sanctions",
+      "query": "Demo Nora Valmer 269",
+      "records": [
+        {
+          "record_id": "san-001",
+          "name": "Demo Nora Valmer 269",
+          "aliases": [],
+          "program": "FICTIONAL-DEMONSTRATION-LIST",
+          "listed_at": "2026-09-01"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "summary": "A homonym finding does not resolve an unrelated open KYC mismatch.",
+    "signals": [
+      {
+        "key": "context:registry_confirmation",
+        "statement": "The independent registry matches the customer's identity document and KYC name; this establishes the identity being compared, not a sanctions decision.",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "list_case_documents",
+            "record_id": "doc-001"
+          },
+          {
+            "tool": "list_case_documents",
+            "record_id": "doc-003"
+          },
+          {
+            "tool": "get_kyc_profile",
+            "record_id": "kyc-001"
+          }
+        ]
+      },
+      {
+        "key": "context:distinct_identity",
+        "statement": "The matching name belongs to records with different dates of birth (1985-02-17 versus 1959-09-30) and countries (FR versus XQ). The independent identity check supports a false-positive hypothesis for human review; the name alone does not establish a match.",
+        "confidence": 1.0,
+        "sources": [
+          {
+            "tool": "list_case_documents",
+            "record_id": "doc-001"
+          },
+          {
+            "tool": "list_case_documents",
+            "record_id": "doc-002"
+          },
+          {
+            "tool": "list_case_documents",
+            "record_id": "doc-003"
+          },
+          {
+            "tool": "search_sanctions",
+            "record_id": "san-001"
+          },
+          {
+            "tool": "get_kyc_profile",
+            "record_id": "kyc-001"
+          }
+        ]
+      },
+      {
+        "key": "kyc:alert-002",
+        "statement": "An open alert reports inconsistent KYC information.",
+        "confidence": 0.7,
+        "sources": [
+          {
+            "tool": "list_alerts",
+            "record_id": "alert-002"
+          }
+        ]
+      }
+    ],
+    "recommendation": "escalate"
+  }
+}
