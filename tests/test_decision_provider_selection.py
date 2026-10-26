@@ -11,22 +11,7 @@ import pytest
 
 from casefile.bootstrap import decision_benchmark as module
 from casefile.bootstrap.decision_benchmark import ReplayTransport, benchmark, settings
-
-
-def dataset(tmp_path: Path, *providers: str) -> Path:
-    root = tmp_path / "dataset"
-    root.mkdir()
-    (root / "golden").symlink_to(Path("evals/golden").resolve(), target_is_directory=True)
-    (root / "replay").symlink_to(Path("evals/replay").resolve(), target_is_directory=True)
-    (root / "current").symlink_to(Path("evals/current").resolve(), target_is_directory=True)
-    (root / "decision-thresholds.toml").symlink_to(Path("evals/decision-thresholds.toml").resolve())
-    if providers:
-        (root / "decision-replay").mkdir()
-        for name in providers:
-            (root / "decision-replay" / f"{name}.json").symlink_to(
-                Path(f"evals/decision-replay/{name}.json").resolve()
-            )
-    return root
+from tests.decision_support import dataset
 
 
 @pytest.mark.asyncio

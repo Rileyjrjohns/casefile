@@ -15,7 +15,7 @@ from pydantic import JsonValue
 from casefile.bootstrap import decision_benchmark as module
 from casefile.bootstrap.decision_benchmark import ReplayTransport, benchmark
 from casefile.bootstrap.decision_recording import Recording, RecordingTransport, canonical
-from tests.test_decision_provider_selection import dataset
+from tests.decision_support import dataset
 from tests.test_decision_recording import RECORDED_AT
 
 API_KEY = "sk-test-do-not-store-7c1f"
