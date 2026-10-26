@@ -73,6 +73,8 @@ from casefile.shared.result import Err, Ok, Result
 
 PROVIDERS = ("local", "jev", "llm")
 THRESHOLDS_FILE = "decision-thresholds.toml"
+DEFAULT_MAX_COST = Decimal("1")
+DEFAULT_MAX_TOKENS = 2_500_000
 
 
 @dataclass(frozen=True, slots=True)
@@ -398,8 +400,8 @@ async def benchmark(
     *,
     live: bool = False,
     providers: tuple[str, ...] = PROVIDERS,
-    max_cost: Decimal = Decimal("1"),
-    max_tokens: int = 2_500_000,
+    max_cost: Decimal = DEFAULT_MAX_COST,
+    max_tokens: int = DEFAULT_MAX_TOKENS,
     thresholds: Path | None = None,
     local: DecisionModel | None = None,
     record_at: datetime | None = None,
@@ -423,6 +425,13 @@ async def benchmark(
             raise ValueError("Recording needs a remote provider (jev or llm).")
         if record_at.tzinfo is None:
             raise ValueError("Recording needs a timezone-aware instant.")
+        if max_tokens > DEFAULT_MAX_TOKENS:
+            # A replay charges the recorded token counts against the same budget, which an
+            # offline run takes from the default, so a larger recording could not be replayed.
+            raise ValueError(
+                f"Record within the {DEFAULT_MAX_TOKENS:,} token budget the offline benchmark "
+                "applies when it replays."
+            )
     floors = (
         load_decision_thresholds(thresholds or root / THRESHOLDS_FILE)
         if "local" in providers
@@ -687,8 +696,8 @@ def main() -> None:
         default=list(PROVIDERS),
         help="Adapters to measure; only selected remote providers require credentials.",
     )
-    parser.add_argument("--max-cost", type=Decimal, default=Decimal("1"))
-    parser.add_argument("--max-tokens", type=int, default=2_500_000)
+    parser.add_argument("--max-cost", type=Decimal, default=DEFAULT_MAX_COST)
+    parser.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS)
     parser.add_argument(
         "--thresholds",
         type=Path,

@@ -226,6 +226,21 @@ async def test_recording_needs_a_live_run_with_a_remote_provider_and_an_aware_in
         )
 
 
+@pytest.mark.asyncio
+async def test_a_recording_must_fit_the_token_budget_the_offline_benchmark_applies(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="2,500,000 token"):
+        await benchmark(
+            Path("evals"),
+            tmp_path,
+            live=True,
+            providers=("jev",),
+            record_at=RECORDED_AT,
+            max_tokens=2_500_001,
+        )
+
+
 def command(monkeypatch: pytest.MonkeyPatch, *arguments: str) -> int:
     monkeypatch.setattr(sys, "argv", ["casefile-decisions", *arguments])
     with pytest.raises(SystemExit) as result:
