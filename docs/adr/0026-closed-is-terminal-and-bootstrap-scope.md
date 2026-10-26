@@ -46,7 +46,7 @@ reason was not written down.
   forbid a feature importing another, so any code that joins case intake,
   investigation, review and evaluation can only live there.
 
-## Audit of bootstrap for movable logic
+## Bootstrap review for movable logic
 
 Each `Runtime` method was checked for logic that involves a single feature and
 could move into it without cross-feature imports.
