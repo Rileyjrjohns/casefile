@@ -47,9 +47,9 @@ def test_invalid_probabilities_scores_and_usage(
 @pytest.mark.parametrize("name", ["jev", "llm"])
 @pytest.mark.parametrize("mutation", ["unknown", "nonfinite", "usage", "operation"])
 async def test_provider_contract_rejects_malformed_responses(
-    name: str, mutation: str, recorded_probes: tuple[Probe, ...]
+    name: str, mutation: str, recorded_probes: tuple[Probe, ...], synthetic_replay: Path
 ) -> None:
-    tape = ReplayTransport(Path("evals/decision-replay"))
+    tape = ReplayTransport(synthetic_replay)
     q = recorded_probes[0].question
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -78,8 +78,10 @@ async def test_provider_contract_rejects_malformed_responses(
             if name == "jev"
             else LlmDecisionModel(HttpLanguageModel(client, settings(name, False)))
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as rejected:
             await model.choose(q)
+    # The contract refused the answer; the replay did not simply fail to find one.
+    assert "frozen recording" not in str(rejected.value)
 
 
 @pytest.mark.asyncio
@@ -137,9 +139,9 @@ async def test_enabled_jev_rejects_unfilled_environment(key: str, entry: str, me
 
 @pytest.mark.asyncio
 async def test_jev_environment_routes_authenticated_requests(
-    recorded_probes: tuple[Probe, ...],
+    recorded_probes: tuple[Probe, ...], synthetic_replay: Path
 ) -> None:
-    tape = ReplayTransport(Path("evals/decision-replay"))
+    tape = ReplayTransport(synthetic_replay, ("jev",))
 
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.headers["Authorization"] == "Bearer test-only-key"
