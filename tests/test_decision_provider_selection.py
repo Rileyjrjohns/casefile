@@ -11,6 +11,7 @@ import pytest
 
 from casefile.bootstrap import decision_benchmark as module
 from casefile.bootstrap.decision_benchmark import ReplayTransport, benchmark, settings
+from casefile.bootstrap.decision_recording import Recording
 from tests.decision_support import dataset
 
 
@@ -24,15 +25,18 @@ async def test_local_only_needs_no_remote_recordings_or_credentials(tmp_path: Pa
 
 @pytest.mark.asyncio
 async def test_offline_subset_needs_only_selected_recording(tmp_path: Path) -> None:
+    recording = Recording.model_validate_json(Path("evals/decision-replay/jev.json").read_text())
+    versions = {str(response["model"]) for response in recording.responses.values()}
     report = await benchmark(dataset(tmp_path, "jev"), tmp_path / "out", providers=("jev",))
     assert report.passed
     assert set(report.adapters) == {"jev"}
+    assert report.provenance == {"jev": recording.provenance}
     # A choice with a single option is resolved locally and never reaches the provider.
-    assert report.models["jev"] == ("jev-synthetic-protocol-v1", "singleton-route")
+    assert report.models["jev"] == tuple(sorted({*versions, "singleton-route"}))
     observations = json.loads((tmp_path / "out/decision-observations.json").read_text())
     assert observations["jev"][0]["expected"] == "normal"
     assert observations["jev"][0]["value"] == "normal"
-    assert observations["jev"][0]["model"] == "jev-synthetic-protocol-v1"
+    assert observations["jev"][0]["model"] in versions
 
 
 @pytest.mark.asyncio
@@ -62,10 +66,10 @@ def live_environment(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.asyncio
 @pytest.mark.parametrize("max_tokens", [1, 2_500_000])
 async def test_live_jev_subset_keeps_budget_and_observation_audit(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, max_tokens: int
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, synthetic_replay: Path, max_tokens: int
 ) -> None:
     live_environment(monkeypatch)
-    tape = ReplayTransport(Path("evals/decision-replay"))
+    tape = ReplayTransport(synthetic_replay, ("jev",))
     requests: list[httpx.Request] = []
 
     def handle(request: httpx.Request) -> httpx.Response:
