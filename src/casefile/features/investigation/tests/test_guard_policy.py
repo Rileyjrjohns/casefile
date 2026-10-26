@@ -131,3 +131,22 @@ def test_denial_reasons_name_each_failing_fact() -> None:
 
 def test_malformed_state_is_reported_as_missing_facts() -> None:
     assert guard_denial_reasons({"tool": "get_kyc_profile"}) == ("guard facts missing or invalid",)
+
+
+@pytest.mark.parametrize(
+    "broken",
+    [
+        pytest.param({"query_scope": "elsewhere"}, id="unknown-scope"),
+        pytest.param({"query_scope": None}, id="no-scope"),
+        pytest.param({"tool_allowed": "yes"}, id="allowed-as-text"),
+        pytest.param({"tool_allowed": 1}, id="allowed-as-number"),
+        pytest.param({"already_called": "no"}, id="called-as-text"),
+        pytest.param({"already_called": 0}, id="called-as-number"),
+        pytest.param({"tool_allowed": None}, id="allowed-missing"),
+        pytest.param({"already_called": None}, id="called-missing"),
+    ],
+)
+def test_one_malformed_fact_is_enough_to_fail_closed(broken: dict[str, object]) -> None:
+    state: dict[str, object] = dict(guard_state(ToolName.KYC, SUBJECT, context(), ()))
+    assert guard_denial_reasons(state) == ()
+    assert guard_denial_reasons({**state, **broken}) == ("guard facts missing or invalid",)
