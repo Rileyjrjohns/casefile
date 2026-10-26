@@ -22,15 +22,24 @@ API_KEY = "sk-test-do-not-store-7c1f"
 MODEL = "jev-latest"
 URL = "https://provider.test/v1/systemone"
 SYNTHETIC_MODEL = "jev-synthetic-protocol-v1"
+RESOLVED_MODEL = "jev-test-version"
 
 
 class Provider:
-    """A stand-in for the live Jev API that answers the way the synthetic fixtures do."""
+    """A stand-in for the live Jev API that answers the way the synthetic fixtures do.
+
+    It reads `fixtures`, the synthetic fixtures a test generated, and never the committed files.
+    """
 
     def __init__(
-        self, *, fail_on: int | None = None, input_tokens: int = 100, echo_key: bool = False
+        self,
+        fixtures: Path,
+        *,
+        fail_on: int | None = None,
+        input_tokens: int = 100,
+        echo_key: bool = False,
     ) -> None:
-        self.tape = ReplayTransport(Path("evals/decision-replay"), ("jev",))
+        self.tape = ReplayTransport(fixtures, ("jev",))
         self.fail_on = fail_on
         self.input_tokens = input_tokens
         self.echo_key = echo_key
@@ -45,7 +54,7 @@ class Provider:
         assert body["model"] == MODEL
         body["model"] = SYNTHETIC_MODEL
         answer: dict[str, JsonValue] = dict(self.tape.recordings["jev"].responses[canonical(body)])
-        answer["model"] = "jev-1.14.0"
+        answer["model"] = RESOLVED_MODEL
         answer["usage"] = {"input_tokens": self.input_tokens, "output_tokens": 1}
         if self.echo_key:
             answer["debug"] = {"authorization": f"Bearer {API_KEY}"}
@@ -67,13 +76,11 @@ def connect(monkeypatch: pytest.MonkeyPatch, provider: Provider) -> None:
     monkeypatch.setattr(module, "provider_transport", lambda: httpx.MockTransport(provider.handle))
 
 
-def with_replay_copies(root: Path, *names: str) -> dict[str, bytes]:
+def with_replay_copies(root: Path, fixtures: Path, *names: str) -> dict[str, bytes]:
     """Plain copies of synthetic fixtures, so a test can see whether a run touched them."""
     (root / "decision-replay").mkdir(exist_ok=True)
     for name in names:
-        shutil.copyfile(
-            Path(f"evals/decision-replay/{name}.json"), root / "decision-replay" / f"{name}.json"
-        )
+        shutil.copyfile(fixtures / f"{name}.json", root / "decision-replay" / f"{name}.json")
     return {name: (root / "decision-replay" / f"{name}.json").read_bytes() for name in names}
 
 
@@ -86,12 +93,12 @@ def answers(output: Path) -> list[dict[str, object]]:
 
 @pytest.mark.asyncio
 async def test_a_recorded_live_run_replays_to_the_same_answers_offline(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, synthetic_replay: Path
 ) -> None:
-    provider = Provider()
+    provider = Provider(synthetic_replay)
     connect(monkeypatch, provider)
     root = dataset(tmp_path)
-    untouched = with_replay_copies(root, "llm")
+    untouched = with_replay_copies(root, synthetic_replay, "llm")
     live = await benchmark(
         root, tmp_path / "live", live=True, providers=("jev",), record_at=RECORDED_AT
     )
@@ -116,7 +123,7 @@ async def test_a_recorded_live_run_replays_to_the_same_answers_offline(
     assert offline.passed
     assert offline.provenance == {"jev": "provider-recording"}
     assert offline.recordings == {}
-    assert offline.models == live.models == {"jev": ("jev-1.14.0", "singleton-route")}
+    assert offline.models == live.models == {"jev": (RESOLVED_MODEL, "singleton-route")}
     assert answers(tmp_path / "offline") == answers(tmp_path / "live")
     assert offline.adapters["jev"].keys() == live.adapters["jev"].keys()
     assert (
@@ -127,9 +134,9 @@ async def test_a_recorded_live_run_replays_to_the_same_answers_offline(
 
 @pytest.mark.asyncio
 async def test_a_recording_holds_request_and_response_bodies_and_no_credential(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, synthetic_replay: Path
 ) -> None:
-    connect(monkeypatch, Provider())
+    connect(monkeypatch, Provider(synthetic_replay))
     root = dataset(tmp_path)
     await benchmark(root, tmp_path / "out", live=True, providers=("jev",), record_at=RECORDED_AT)
     raw = (root / "decision-replay" / "jev.json").read_bytes()
@@ -144,9 +151,9 @@ async def test_a_recording_holds_request_and_response_bodies_and_no_credential(
 
 @pytest.mark.asyncio
 async def test_a_response_that_echoes_the_credential_is_never_written(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, synthetic_replay: Path
 ) -> None:
-    connect(monkeypatch, Provider(echo_key=True))
+    connect(monkeypatch, Provider(synthetic_replay, echo_key=True))
     root = dataset(tmp_path)
     report = await benchmark(
         root, tmp_path / "out", live=True, providers=("jev",), record_at=RECORDED_AT
@@ -159,16 +166,17 @@ async def test_a_response_that_echoes_the_credential_is_never_written(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("failure", ["http-error", "budget", "malformed"])
 async def test_a_failed_or_stopped_run_writes_no_recording_and_keeps_the_old_file(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, synthetic_replay: Path, failure: str
 ) -> None:
     provider = Provider(
+        synthetic_replay,
         fail_on=7 if failure == "http-error" else None,
         # Four thousand tokens a call exhaust a 15,000 token budget after a few answers.
         input_tokens={"budget": 4_000, "malformed": -1}.get(failure, 100),
     )
     connect(monkeypatch, provider)
     root = dataset(tmp_path)
-    untouched = with_replay_copies(root, "jev")
+    untouched = with_replay_copies(root, synthetic_replay, "jev")
     report = await benchmark(
         root,
         tmp_path / "out",
@@ -189,14 +197,14 @@ async def test_a_failed_or_stopped_run_writes_no_recording_and_keeps_the_old_fil
 
 @pytest.mark.asyncio
 async def test_recording_over_a_linked_fixture_replaces_the_link_not_its_target(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, synthetic_replay: Path
 ) -> None:
-    connect(monkeypatch, Provider())
+    connect(monkeypatch, Provider(synthetic_replay))
     root = dataset(tmp_path)
     shared = tmp_path / "shared"
     shared.mkdir()
     target = shared / "jev.json"
-    shutil.copyfile("evals/decision-replay/jev.json", target)
+    shutil.copyfile(synthetic_replay / "jev.json", target)
     before = target.read_bytes()
     (root / "decision-replay").mkdir()
     (root / "decision-replay" / "jev.json").symlink_to(target)
@@ -249,9 +257,12 @@ def command(monkeypatch: pytest.MonkeyPatch, *arguments: str) -> int:
 
 
 def test_the_command_records_a_live_run_and_reports_the_file(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    synthetic_replay: Path,
 ) -> None:
-    connect(monkeypatch, Provider())
+    connect(monkeypatch, Provider(synthetic_replay))
     root = dataset(tmp_path)
     before = datetime.now(UTC)
     code = command(
@@ -279,9 +290,13 @@ def test_the_command_exits_non_zero_and_names_the_provider_that_was_not_recorded
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
+    synthetic_replay: Path,
     failure: str,
 ) -> None:
-    connect(monkeypatch, Provider(fail_on=3 if failure == "http-error" else None))
+    connect(
+        monkeypatch,
+        Provider(synthetic_replay, fail_on=3 if failure == "http-error" else None),
+    )
     root = dataset(tmp_path)
     budget = ("--max-tokens", "1") if failure == "budget" else ()
     code = command(
