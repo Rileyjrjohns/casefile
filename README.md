@@ -1,5 +1,6 @@
 # Casefile
 
+[![CI](https://github.com/Rileyjrjohns/casefile/actions/workflows/ci.yml/badge.svg)](https://github.com/Rileyjrjohns/casefile/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
 
