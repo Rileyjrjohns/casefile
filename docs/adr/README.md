@@ -27,3 +27,4 @@
 - [0025-benchmark-questions-recorded-from-agent-runs](./0025-benchmark-questions-recorded-from-agent-runs.md)
 - [0026-closed-is-terminal-and-bootstrap-scope](./0026-closed-is-terminal-and-bootstrap-scope.md)
 - [0027-no-io-standard-library-in-core-layers](./0027-no-io-standard-library-in-core-layers.md)
+- [0028-provider-recordings-for-offline-replay](./0028-provider-recordings-for-offline-replay.md)
