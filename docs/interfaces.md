@@ -53,7 +53,8 @@ restricted to loopback and foreign-Origin writes are rejected. Nginx limits
 bodies to 128 KiB, adds a restrictive CSP and proxies same-origin `/api/` requests.
 The API itself refuses bodies above 1 MiB with 413 (`payload_too_large`) and answers
 validation failures with 422 listing only each error's location and type, never the
-submitted values. Direct API deployments still need equivalent proxy limits.
+submitted values; client-chosen key names longer than 64 characters are replaced by a
+placeholder and at most 32 errors are listed. Direct API deployments still need equivalent proxy limits.
 
 ## MCP
 

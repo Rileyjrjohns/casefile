@@ -22,6 +22,8 @@ from casefile.features.investigation.adapters.inbound.documents import StartRunD
 from casefile.features.review.adapters.inbound.documents import ReviewDocument
 
 MAX_BODY_BYTES = 1024 * 1024
+MAX_ERROR_ITEMS = 32
+MAX_LOCATION_PART_CHARS = 64
 
 
 class PayloadTooLarge(HTTPException):
@@ -29,6 +31,12 @@ class PayloadTooLarge(HTTPException):
 
     def __init__(self) -> None:
         super().__init__(status_code=413, detail="Request body is too large.")
+
+
+def bounded_location(part: str | int) -> str | int:
+    if isinstance(part, str) and len(part) > MAX_LOCATION_PART_CHARS:
+        return "<too long>"
+    return part
 
 
 def payload_too_large() -> JSONResponse:
@@ -134,12 +142,14 @@ def create_app(
     @app.exception_handler(RequestValidationError)
     async def invalid_request(request: Request, error: RequestValidationError) -> JSONResponse:
         # Only locations and error types: pydantic's default also echoes the input and ctx.
+        # Location parts can carry client-chosen JSON keys, so they and the item count are bounded.
         return JSONResponse(
             {
                 "error": "validation_error",
                 "message": "Request validation failed.",
                 "detail": [
-                    {"loc": list(item["loc"]), "type": item["type"]} for item in error.errors()
+                    {"loc": [bounded_location(part) for part in item["loc"]], "type": item["type"]}
+                    for item in error.errors()[:MAX_ERROR_ITEMS]
                 ],
             },
             status_code=422,

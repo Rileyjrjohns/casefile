@@ -122,6 +122,34 @@ async def test_validation_errors_report_locations_without_echoing_input() -> Non
 
 
 @pytest.mark.asyncio
+async def test_validation_errors_bound_client_chosen_key_names_and_item_count() -> None:
+    api = create_app(await create_memory_runtime(seed=False), background_worker=False)
+    huge_key = "SECRETKEY" + "x" * 100_000
+    many_keys = {f"unknown-{index}": index for index in range(500)}
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=api), base_url="http://localhost"
+    ) as client:
+        long_key = await client.post(
+            "/cases",
+            json={
+                "alert_id": "a",
+                "subject_id": "s",
+                "kind": "unusual_transaction",
+                "description": "Fictional",
+                huge_key: 1,
+            },
+        )
+        crowded = await client.post("/cases", json=many_keys)
+    for rejected in (long_key, crowded):
+        assert rejected.status_code == 422
+        assert "SECRETKEY" not in rejected.text
+        assert len(rejected.content) < 4_000
+        assert all(
+            len(str(part)) <= 64 for item in rejected.json()["detail"] for part in item["loc"]
+        )
+
+
+@pytest.mark.asyncio
 async def test_oversized_request_bodies_are_refused_with_413() -> None:
     api = create_app(await create_memory_runtime(seed=False), background_worker=False)
     oversized = b'{"description": "' + b"x" * (1024 * 1024) + b'"}'
